@@ -33,6 +33,15 @@ export const TEMPLATES = {
       { x: 0.5, y: 0.5, w: 0.5, h: 0.5 },
     ],
   },
+  '3-bottom-wide': {
+    id: '3-bottom-wide',
+    label: 'Una ancha abajo y dos arriba',
+    panels: [
+      { x: 0, y: 0.5, w: 1, h: 0.5 },
+      { x: 0, y: 0, w: 0.5, h: 0.5 },
+      { x: 0.5, y: 0, w: 0.5, h: 0.5 },
+    ],
+  },
   '3-left-tall': {
     id: '3-left-tall',
     label: 'Una alta a la izquierda y dos a la derecha',
@@ -40,6 +49,15 @@ export const TEMPLATES = {
       { x: 0, y: 0, w: 0.5, h: 1 },
       { x: 0.5, y: 0, w: 0.5, h: 0.5 },
       { x: 0.5, y: 0.5, w: 0.5, h: 0.5 },
+    ],
+  },
+  '3-right-tall': {
+    id: '3-right-tall',
+    label: 'Una alta a la derecha y dos a la izquierda',
+    panels: [
+      { x: 0.5, y: 0, w: 0.5, h: 1 },
+      { x: 0, y: 0, w: 0.5, h: 0.5 },
+      { x: 0, y: 0.5, w: 0.5, h: 0.5 },
     ],
   },
   '4-grid': {

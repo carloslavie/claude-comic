@@ -212,6 +212,58 @@ describe('buildPages', () => {
       }
     });
   });
+
+  describe('plantillas espejadas', () => {
+    const MIRRORED = ['3-bottom-wide', '3-right-tall'];
+
+    it.each(MIRRORED)('%s elegida con 3 imágenes queda manual', (id) => {
+      expect(buildPages(makeImages('LLL'), '', { 0: id })).toEqual([
+        { kind: 'panels', templateId: id, imageIds: ['img-1', 'img-2', 'img-3'], layoutMode: 'manual', available: 3 },
+      ]);
+    });
+
+    it.each(MIRRORED)('%s elegida con 2 imágenes queda en fallback', (id) => {
+      expect(buildPages(makeImages('LL'), '', { 0: id })).toEqual([
+        { kind: 'panels', templateId: '2-rows', imageIds: ['img-1', 'img-2'], layoutMode: 'fallback', available: 2 },
+      ]);
+    });
+
+    it('la regla automática nunca las elige', () => {
+      // Todas las combinaciones de L/P/S de 1 a 6 imágenes.
+      let patterns = [''];
+      for (let n = 1; n <= 6; n++) {
+        patterns = patterns.flatMap((p) => [...'LPS'].map((c) => p + c));
+        for (const pattern of patterns) {
+          for (const id of templateIds(buildPages(makeImages(pattern), ''))) {
+            expect(MIRRORED).not.toContain(id);
+          }
+        }
+      }
+    });
+  });
+});
+
+describe('TEMPLATES', () => {
+  // Área de la intersección entre dos viñetas (0 si no se tocan o solo comparten borde).
+  const overlap = (a, b) =>
+    Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
+    Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+
+  it.each(['3-bottom-wide', '3-right-tall'])('%s cubre el área útil sin solaparse', (id) => {
+    const { panels } = TEMPLATES[id];
+    for (const p of panels) {
+      expect(p.x).toBeGreaterThanOrEqual(0);
+      expect(p.y).toBeGreaterThanOrEqual(0);
+      expect(p.x + p.w).toBeLessThanOrEqual(1);
+      expect(p.y + p.h).toBeLessThanOrEqual(1);
+    }
+    for (let i = 0; i < panels.length; i++) {
+      for (let j = i + 1; j < panels.length; j++) {
+        expect(overlap(panels[i], panels[j])).toBe(0);
+      }
+    }
+    expect(panels.reduce((sum, p) => sum + p.w * p.h, 0)).toBeCloseTo(1);
+  });
 });
 
 describe('prunePageTemplateOverrides', () => {

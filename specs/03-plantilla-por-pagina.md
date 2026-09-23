@@ -1,6 +1,6 @@
 # SPEC 03 — Plantilla elegida a mano por página
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 01, SPEC 02
 > **Fecha:** 2026-09-23
 > **Objetivo:** Permitir elegir desde un desplegable en cada página de la vista previa la plantilla (disposición y cantidad de fotos), y que las páginas sin elección sigan usando el maquetado automático.
