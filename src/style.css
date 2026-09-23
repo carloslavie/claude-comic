@@ -283,6 +283,34 @@ body {
   margin: 0;
 }
 
+.pdf-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 12px;
+}
+
+.pdf-format {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+
+.pdf-format select {
+  padding: 4px 6px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pdf-format select:disabled {
+  cursor: not-allowed;
+}
+
 .button:disabled {
   background: #e5e5e5;
   color: #888;

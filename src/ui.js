@@ -14,6 +14,7 @@ import {
   resetTitleStyle,
   clearPageTemplateOverride,
   prunePageTemplates,
+  setPdfFormat,
   MAX_IMAGES,
 } from './state.js';
 import { TEMPLATES } from './templates.js';
@@ -22,6 +23,7 @@ import { renderPage, PAGE_WIDTH_MM, PAGE_HEIGHT_MM } from './render.js';
 import { exportPdf } from './pdf.js';
 import { resolvePageColor, PALETTE } from './colors.js';
 import { TITLE_SIZES, TITLE_FONTS, TITLE_POSITIONS, TITLE_OUTLINES } from './titleStyle.js';
+import { PDF_FORMATS } from './pdfFormat.js';
 
 // Resolución de cada página en la vista previa (la mitad de los 150 DPI del PDF);
 // el CSS la escala al ancho disponible.
@@ -42,7 +44,18 @@ export function initUI() {
   const preview = document.getElementById('preview');
   const previewEmpty = document.getElementById('preview-empty');
   const pdfButton = document.getElementById('pdf-button');
+  const pdfFormat = document.getElementById('pdf-format');
   let exporting = false;
+
+  // El formato solo afecta al PDF: cambiarlo no redibuja la vista previa.
+  for (const format of Object.values(PDF_FORMATS)) {
+    const option = document.createElement('option');
+    option.value = format.id;
+    option.textContent = format.label;
+    pdfFormat.append(option);
+  }
+  pdfFormat.value = state.pdfFormat;
+  pdfFormat.addEventListener('change', () => setPdfFormat(pdfFormat.value));
 
   async function handleFiles(files) {
     const rejected = await addFiles(files);
@@ -55,19 +68,29 @@ export function initUI() {
     renderThumbs(thumbList);
     imageCount.textContent = `${state.images.length} / ${MAX_IMAGES} imágenes`;
     pdfButton.disabled = exporting || state.images.length === 0;
+    pdfFormat.disabled = pdfButton.disabled;
     schedulePreview();
   }
 
   pdfButton.addEventListener('click', async () => {
     exporting = true;
     pdfButton.disabled = true;
+    pdfFormat.disabled = true;
     pdfButton.textContent = 'Generando…';
     try {
       const pages = buildPages(state.images, state.title, state.pageTemplateOverrides);
       const imagesById = new Map(state.images.map((img) => [img.id, img]));
       const backgrounds = pages.map((_, index) => resolvePageColor(index, state.pageColor, state.pageColorOverrides));
       await loadTitleFont();
-      await exportPdf(pages, imagesById, state.title, backgrounds, state.titleStyle);
+      await exportPdf(
+        pages,
+        imagesById,
+        state.title,
+        backgrounds,
+        state.titleStyle,
+        state.pdfFormat,
+        state.pageColor,
+      );
     } catch (error) {
       console.error(error);
       showErrors(messages, ['No se pudo generar el PDF.']);

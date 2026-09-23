@@ -54,7 +54,13 @@
       <section class="panel preview-panel" aria-labelledby="preview-heading">
         <div class="preview-header">
           <h2 id="preview-heading">Vista previa</h2>
-          <button id="pdf-button" class="button" type="button" disabled>Descargar PDF</button>
+          <div class="pdf-actions">
+            <label class="pdf-format">
+              <span>Formato</span>
+              <select id="pdf-format" disabled></select>
+            </label>
+            <button id="pdf-button" class="button" type="button" disabled>Descargar PDF</button>
+          </div>
         </div>
         <p id="preview-empty" class="hint">Cargá imágenes para ver las páginas.</p>
         <div id="preview" class="preview"></div>

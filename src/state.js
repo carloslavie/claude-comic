@@ -3,6 +3,7 @@ import { getOrientation } from './orientation.js';
 import { DEFAULT_PAGE_COLOR, prunePageColorOverrides } from './colors.js';
 import { prunePageTemplateOverrides } from './layout.js';
 import { DEFAULT_TITLE_STYLE } from './titleStyle.js';
+import { DEFAULT_PDF_FORMAT, PDF_FORMATS } from './pdfFormat.js';
 
 export const MAX_IMAGES = 40;
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -14,6 +15,7 @@ export const state = {
   pageColorOverrides: {}, // { [pageIndex: number]: '#rrggbb' }, índice 0-based
   pageTemplateOverrides: {}, // { [pageIndex: number]: templateId }, índice 0-based
   titleStyle: { ...DEFAULT_TITLE_STYLE }, // estilo del título de la portada
+  pdfFormat: DEFAULT_PDF_FORMAT, // clave de PDF_FORMATS
 };
 
 let nextId = 1;
@@ -170,4 +172,12 @@ export function setTitleStyle(partial) {
  */
 export function resetTitleStyle() {
   state.titleStyle = { ...DEFAULT_TITLE_STYLE };
+}
+
+/**
+ * Elige el formato de hoja del PDF. Una clave que no está en PDF_FORMATS se ignora.
+ * @param {string} format
+ */
+export function setPdfFormat(format) {
+  if (format in PDF_FORMATS) state.pdfFormat = format;
 }
