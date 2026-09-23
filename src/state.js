@@ -1,5 +1,6 @@
 // Estado en memoria de la app y las operaciones que lo modifican.
 import { getOrientation } from './orientation.js';
+import { DEFAULT_PAGE_COLOR, prunePageColorOverrides } from './colors.js';
 
 export const MAX_IMAGES = 40;
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -7,6 +8,8 @@ export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const state = {
   title: '', // string, título del comic; vacío = sin portada
   images: [], // ComicImage[], en el orden elegido por el usuario
+  pageColor: DEFAULT_PAGE_COLOR, // string '#rrggbb', color global de fondo
+  pageColorOverrides: {}, // { [pageIndex: number]: '#rrggbb' }, índice 0-based
 };
 
 let nextId = 1;
@@ -90,4 +93,37 @@ export function removeImage(id) {
  */
 export function setTitle(text) {
   state.title = text;
+}
+
+/**
+ * Cambia el color global de fondo de página.
+ * @param {string} color '#rrggbb'
+ */
+export function setPageColor(color) {
+  state.pageColor = color;
+}
+
+/**
+ * Fija el color propio de una página; pisa al color global solo en esa página.
+ * @param {number} index índice de página, 0-based
+ * @param {string} color '#rrggbb'
+ */
+export function setPageColorOverride(index, color) {
+  state.pageColorOverrides[index] = color;
+}
+
+/**
+ * Quita el color propio de una página, que vuelve a usar el color global.
+ * @param {number} index índice de página, 0-based
+ */
+export function clearPageColorOverride(index) {
+  delete state.pageColorOverrides[index];
+}
+
+/**
+ * Descarta los colores propios de páginas que ya no existen.
+ * @param {number} pageCount
+ */
+export function prunePageColors(pageCount) {
+  state.pageColorOverrides = prunePageColorOverrides(state.pageColorOverrides, pageCount);
 }

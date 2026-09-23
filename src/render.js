@@ -1,5 +1,6 @@
 // Dibuja una página del comic en un canvas. Lo usan la vista previa y el PDF.
 import { TEMPLATES } from './templates.js';
+import { DEFAULT_PAGE_COLOR } from './colors.js';
 
 // Medidas de página en mm (A4 vertical).
 export const PAGE_WIDTH_MM = 210;
@@ -22,13 +23,14 @@ const EPSILON = 1e-6;
  * @param {Map<string, {bitmap: ImageBitmap, width: number, height: number}>} imagesById
  * @param {HTMLCanvasElement | OffscreenCanvas} canvas
  * @param {string} [title] texto de la portada; solo se usa si page.kind === 'cover'
+ * @param {string} [background] color de fondo de la página (margen y medianil), '#rrggbb'
  */
-export function renderPage(page, imagesById, canvas, title = '') {
+export function renderPage(page, imagesById, canvas, title = '', background = DEFAULT_PAGE_COLOR) {
   const ctx = canvas.getContext('2d');
   const mm = canvas.width / PAGE_WIDTH_MM; // px por mm
 
   ctx.save();
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = background;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // La portada usa una sola viñeta que ocupa toda el área útil.

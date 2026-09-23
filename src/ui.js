@@ -1,8 +1,20 @@
 // Interfaz: carga de imágenes, título, lista de miniaturas, mensajes y vista previa.
-import { state, addFiles, moveImage, removeImage, setTitle, MAX_IMAGES } from './state.js';
+import {
+  state,
+  addFiles,
+  moveImage,
+  removeImage,
+  setTitle,
+  setPageColor,
+  setPageColorOverride,
+  clearPageColorOverride,
+  prunePageColors,
+  MAX_IMAGES,
+} from './state.js';
 import { buildPages } from './layout.js';
 import { renderPage, PAGE_WIDTH_MM, PAGE_HEIGHT_MM } from './render.js';
 import { exportPdf } from './pdf.js';
+import { resolvePageColor, PALETTE } from './colors.js';
 
 // Resolución de cada página en la vista previa (la mitad de los 150 DPI del PDF);
 // el CSS la escala al ancho disponible.
@@ -13,6 +25,7 @@ export function initUI() {
   const fileInput = document.getElementById('file-input');
   const dropZone = document.getElementById('drop-zone');
   const titleInput = document.getElementById('title-input');
+  const pageColor = document.getElementById('page-color');
   const thumbList = document.getElementById('thumb-list');
   const imageCount = document.getElementById('image-count');
   const messages = document.getElementById('messages');
@@ -42,7 +55,8 @@ export function initUI() {
     try {
       const pages = buildPages(state.images, state.title);
       const imagesById = new Map(state.images.map((img) => [img.id, img]));
-      await exportPdf(pages, imagesById, state.title);
+      const backgrounds = pages.map((_, index) => resolvePageColor(index, state.pageColor, state.pageColorOverrides));
+      await exportPdf(pages, imagesById, state.title, backgrounds);
     } catch (error) {
       console.error(error);
       showErrors(messages, ['No se pudo generar el PDF.']);
@@ -88,6 +102,17 @@ export function initUI() {
     refresh();
   });
 
+  pageColor.append(
+    createColorPicker({
+      value: state.pageColor,
+      label: 'Color de fondo',
+      onChange: (color) => {
+        setPageColor(color);
+        refresh();
+      },
+    }),
+  );
+
   thumbList.addEventListener('click', (e) => {
     const button = e.target.closest('button[data-action]');
     if (!button) return;
@@ -105,6 +130,7 @@ export function initUI() {
 function renderPreview(container, emptyHint) {
   const pages = buildPages(state.images, state.title);
   const imagesById = new Map(state.images.map((img) => [img.id, img]));
+  prunePageColors(pages.length);
   emptyHint.hidden = pages.length > 0;
 
   container.replaceChildren(
@@ -115,12 +141,46 @@ function renderPreview(container, emptyHint) {
       const canvas = document.createElement('canvas');
       canvas.width = PREVIEW_WIDTH;
       canvas.height = PREVIEW_HEIGHT;
-      renderPage(page, imagesById, canvas, state.title);
+      const draw = () =>
+        renderPage(page, imagesById, canvas, state.title, resolvePageColor(index, state.pageColor, state.pageColorOverrides));
+      draw();
 
       const caption = document.createElement('figcaption');
       caption.textContent = `${index + 1} · ${page.kind === 'cover' ? 'portada' : page.templateId}`;
 
-      figure.append(canvas, caption);
+      // Los cambios de color de una página redibujan solo su canvas: reconstruir toda la
+      // vista previa cerraría el selector nativo mientras se arrastra.
+      const colorControl = document.createElement('div');
+      colorControl.className = 'page-color';
+
+      const makePicker = () =>
+        createColorPicker({
+          value: resolvePageColor(index, state.pageColor, state.pageColorOverrides),
+          label: `Color de fondo de la página ${index + 1}`,
+          onChange: (color) => {
+            setPageColorOverride(index, color);
+            resetButton.disabled = false;
+            draw();
+          },
+        });
+
+      const resetButton = document.createElement('button');
+      resetButton.type = 'button';
+      resetButton.className = 'page-color-reset';
+      resetButton.textContent = 'Usar global';
+      resetButton.title = `Usar el color global en la página ${index + 1}`;
+      resetButton.disabled = !Object.hasOwn(state.pageColorOverrides, index);
+      resetButton.addEventListener('click', () => {
+        clearPageColorOverride(index);
+        resetButton.disabled = true;
+        picker.replaceWith((picker = makePicker()));
+        draw();
+      });
+
+      let picker = makePicker();
+      colorControl.append(picker, resetButton);
+
+      figure.append(canvas, caption, colorControl);
       return figure;
     }),
   );
@@ -154,6 +214,55 @@ function renderThumbs(list) {
       return li;
     }),
   );
+}
+
+/**
+ * Selector de color: botones con la paleta predefinida y un <input type="color"> libre.
+ * Marca con aria-pressed el botón que coincide con el color actual y se actualiza solo
+ * cuando el usuario elige un color.
+ * @param {{value: string, onChange: (color: string) => void, label: string}} options
+ * @returns {HTMLDivElement}
+ */
+function createColorPicker({ value, onChange, label }) {
+  const picker = document.createElement('div');
+  picker.className = 'color-picker';
+  picker.setAttribute('role', 'group');
+  picker.setAttribute('aria-label', label);
+
+  const swatches = PALETTE.map(({ name, value: color }) => {
+    const swatch = document.createElement('button');
+    swatch.type = 'button';
+    swatch.className = 'color-swatch';
+    swatch.style.backgroundColor = color;
+    swatch.dataset.color = color;
+    swatch.setAttribute('aria-label', name);
+    swatch.title = name;
+    swatch.addEventListener('click', () => select(color));
+    return swatch;
+  });
+
+  const custom = document.createElement('input');
+  custom.type = 'color';
+  custom.className = 'color-custom';
+  custom.setAttribute('aria-label', `${label}: otro color`);
+  custom.title = 'Otro color';
+  custom.addEventListener('input', () => select(custom.value));
+
+  function mark(color) {
+    custom.value = color;
+    for (const swatch of swatches) {
+      swatch.setAttribute('aria-pressed', String(swatch.dataset.color === color));
+    }
+  }
+
+  function select(color) {
+    mark(color);
+    onChange(color);
+  }
+
+  mark(value);
+  picker.append(...swatches, custom);
+  return picker;
 }
 
 function makeButton(action, label, ariaLabel, disabled) {

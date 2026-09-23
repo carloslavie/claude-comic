@@ -226,3 +226,72 @@ body {
   border-color: #bbb;
   cursor: not-allowed;
 }
+
+.color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.color-swatch {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid #1a1a1a;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.color-swatch[aria-pressed='true'] {
+  outline: 3px solid #1d70b8;
+  outline-offset: 2px;
+}
+
+.color-custom {
+  width: 34px;
+  height: 28px;
+  padding: 0 2px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.page-color {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  margin-top: 6px;
+}
+
+.page-color .color-swatch {
+  width: 20px;
+  height: 20px;
+}
+
+.page-color .color-custom {
+  width: 28px;
+  height: 22px;
+}
+
+.page-color-reset {
+  padding: 2px 8px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.page-color-reset:hover:not(:disabled) {
+  background: #ffd23f;
+}
+
+.page-color-reset:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
