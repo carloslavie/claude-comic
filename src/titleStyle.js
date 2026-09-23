@@ -12,6 +12,9 @@ export const TITLE_FONTS = {
   luckiest: { label: 'Luckiest Guy', family: '"Luckiest Guy", "Impact", sans-serif' },
   marker: { label: 'Permanent Marker', family: '"Permanent Marker", "Impact", sans-serif' },
   anton: { label: 'Anton', family: '"Anton", "Impact", sans-serif' },
+  kosugi: { label: 'Kosugi Maru', family: '"Kosugi Maru", sans-serif' },
+  mplusRounded: { label: 'M PLUS Rounded 1c', family: '"M PLUS Rounded 1c", sans-serif' },
+  delaGothic: { label: 'Dela Gothic One', family: '"Dela Gothic One", "Impact", sans-serif' },
 };
 
 export const TITLE_POSITIONS = {

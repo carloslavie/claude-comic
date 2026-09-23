@@ -14,7 +14,7 @@ Corre entera en el navegador: las imágenes nunca salen de la máquina y no hay 
 
 ## Stack y comandos
 
-Vite + JavaScript sin framework (ES modules). Vitest para los tests unitarios. jsPDF para generar el PDF. Las fuentes del título (Bangers, Luckiest Guy, Permanent Marker y Anton) vienen de `@fontsource` y se empaquetan con la app, sin pedidos externos. No hay configuración de lint.
+Vite + JavaScript sin framework (ES modules). Vitest para los tests unitarios. jsPDF para generar el PDF. Las fuentes del título (Bangers, Luckiest Guy, Permanent Marker, Anton, Kosugi Maru, M PLUS Rounded 1c y Dela Gothic One) vienen de `@fontsource` y se empaquetan con la app, sin pedidos externos. No hay configuración de lint.
 
 - `npm run dev`: servidor de desarrollo.
 - `npm test`: ejecuta los tests una vez (`vitest run`). Para un solo archivo: `npx vitest run tests/layout.test.js`.
