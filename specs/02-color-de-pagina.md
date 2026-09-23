@@ -1,6 +1,6 @@
 # SPEC 02 — Color de fondo de las páginas: global y por página
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** SPEC 01
 > **Fecha:** 2026-09-23
 > **Objetivo:** Permitir elegir el color de fondo de las páginas del comic (margen y medianil), con un color global para todas y un color propio opcional por página desde la vista previa.
@@ -94,23 +94,23 @@ Nuevas mutaciones en `src/state.js`:
 
 ## Criterios de aceptación
 
-- [ ] `npm test` pasa, incluido `tests/colors.test.js`.
-- [ ] `npm run build` termina sin errores.
-- [ ] Sin tocar ningún color, la vista previa y el PDF se ven igual que antes de esta spec (fondo blanco).
-- [ ] El control global muestra 8 colores de paleta y un selector libre, debajo del campo de título.
-- [ ] Elegir un color global cambia el fondo (margen y medianil) de todas las páginas sin color propio.
-- [ ] Elegir un color con el selector libre (por ejemplo `#7b2cbf`) lo aplica igual que un color de la paleta.
-- [ ] Cada página de la vista previa tiene su propio selector y un botón "Usar global" debajo del canvas.
-- [ ] Elegir un color en la página 2 cambia solo la página 2.
-- [ ] Con la página 2 personalizada, cambiar el color global no cambia la página 2.
-- [ ] "Usar global" en la página 2 la vuelve al color global actual. Después, el botón queda deshabilitado.
-- [ ] El botón de la paleta que coincide con el color activo se ve marcado y tiene `aria-pressed="true"`.
-- [ ] Con título, la portada (página 1) se puede colorear igual que las demás.
-- [ ] Mientras se arrastra el selector nativo de una página, el selector no se cierra y el canvas se actualiza.
-- [ ] Si la página 3 tiene color propio y se quitan imágenes hasta que hay 2 páginas, al volver a tener 3 páginas la página 3 usa el color global.
-- [ ] Reordenar imágenes no cambia qué número de página tiene color propio.
-- [ ] El borde de las viñetas sigue negro y el título de la portada sigue blanco con contorno negro, con cualquier color de fondo.
-- [ ] El PDF descargado tiene en cada página el mismo color de fondo que la vista previa.
+- [x] `npm test` pasa, incluido `tests/colors.test.js`.
+- [x] `npm run build` termina sin errores.
+- [x] Sin tocar ningún color, la vista previa y el PDF se ven igual que antes de esta spec (fondo blanco).
+- [x] El control global muestra 8 colores de paleta y un selector libre, debajo del campo de título.
+- [x] Elegir un color global cambia el fondo (margen y medianil) de todas las páginas sin color propio.
+- [x] Elegir un color con el selector libre (por ejemplo `#7b2cbf`) lo aplica igual que un color de la paleta.
+- [x] Cada página de la vista previa tiene su propio selector y un botón "Usar global" debajo del canvas.
+- [x] Elegir un color en la página 2 cambia solo la página 2.
+- [x] Con la página 2 personalizada, cambiar el color global no cambia la página 2.
+- [x] "Usar global" en la página 2 la vuelve al color global actual. Después, el botón queda deshabilitado.
+- [x] El botón de la paleta que coincide con el color activo se ve marcado y tiene `aria-pressed="true"`.
+- [x] Con título, la portada (página 1) se puede colorear igual que las demás.
+- [x] Mientras se arrastra el selector nativo de una página, el selector no se cierra y el canvas se actualiza.
+- [x] Si la página 3 tiene color propio y se quitan imágenes hasta que hay 2 páginas, al volver a tener 3 páginas la página 3 usa el color global.
+- [x] Reordenar imágenes no cambia qué número de página tiene color propio.
+- [x] El borde de las viñetas sigue negro y el título de la portada sigue blanco con contorno negro, con cualquier color de fondo.
+- [x] El PDF descargado tiene en cada página el mismo color de fondo que la vista previa.
 
 ## Decisiones
 
