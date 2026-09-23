@@ -10,7 +10,31 @@ Responder siempre al usuario en español en este proyecto.
 
 **Web Comic**: una aplicación web para cargar imágenes y acomodarlas automáticamente como páginas de un libro de historietas.
 
-Todavía no hay código de la aplicación. No hay stack, sistema de build, runner de tests ni configuración de lint. Cuando se agregue código, actualizar este archivo con los comandos y la arquitectura reales en lugar de suponerlos.
+Corre entera en el navegador: las imágenes nunca salen de la máquina y no hay backend.
+
+## Stack y comandos
+
+Vite + JavaScript sin framework (ES modules). Vitest para los tests unitarios. jsPDF para generar el PDF. No hay configuración de lint.
+
+- `npm run dev`: servidor de desarrollo.
+- `npm test`: ejecuta los tests una vez (`vitest run`). Para un solo archivo: `npx vitest run tests/layout.test.js`.
+- `npm run build`: build de producción en `dist/`. `npm run preview` lo sirve.
+
+Los tests cubren solo la lógica pura (`orientation.js` y `layout.js`). La UI, el render en canvas y el PDF se verifican a mano (ver los criterios de aceptación de `specs/01-mvp-comic-pdf.md`).
+
+## Arquitectura
+
+Flujo de datos: `state.images` → `buildPages()` → `renderPage()` por página, en un canvas. La vista previa y el PDF usan el mismo render, así que lo que se ve es lo que se exporta.
+
+- `src/main.js`: punto de entrada; carga los estilos y llama a `initUI()`.
+- `src/state.js`: estado en memoria (`title`, `images`) y sus mutaciones (`addFiles`, `moveImage`, `removeImage`, `setTitle`). `addFiles` valida el tipo (JPG/PNG/WebP), aplica el límite de 40 y decodifica cada archivo a `ImageBitmap` una sola vez.
+- `src/orientation.js`: `getOrientation(w, h)` → `landscape` (>1.2), `portrait` (<0.83) o `square`.
+- `src/templates.js`: catálogo fijo de 6 plantillas (`1-full`, `2-rows`, `2-cols`, `3-top-wide`, `3-left-tall`, `4-grid`). Las viñetas están en fracciones 0..1 del área útil, sin medianil.
+- `src/layout.js`: `buildPages(images, title)`, función pura que elige plantilla según la orientación. Con título, la primera página es la portada.
+- `src/render.js`: `renderPage(page, imagesById, canvas, title)`. Toma la escala del ancho del canvas. Aplica margen (10 mm), medianil (4 mm), borde (0.8 mm), recorte cover y el título de la portada.
+- `src/ui.js`: DOM y eventos. Después de cada cambio de estado, `refresh()` redibuja las miniaturas y agenda la vista previa (una vez por frame).
+- `src/pdf.js`: `exportPdf()` dibuja cada página a 1240 × 1754 px (150 DPI), la agrega como JPEG 0.85 en A4 vertical y descarga `<titulo-kebab>.pdf` o `comic.pdf`.
+- `tests/`: tests de Vitest.
 
 ## Flujo de trabajo: desarrollo guiado por specs
 
@@ -24,5 +48,3 @@ Convenciones que aplican estas skills:
 - Las specs siguen `.agents/skills/spec/template.md`. Empiezan con un encabezado (Estado / Depende de / Fecha / Objetivo en una oración). Después vienen Alcance (Dentro / Fuera), Modelo de datos, Plan de implementación, Criterios de aceptación y Decisiones. Riesgos es opcional. Cierran con una sección "Qué no incluye".
 - Las specs se numeran en orden y con dos dígitos (`01-`, `02-`, …). Una spec nueva usa el mismo idioma y los mismos nombres de estado que las existentes. Estados en español: `Borrador`, `En revisión`, `Aprobado`, `Implementado`, `Obsoleto`.
 - Durante la implementación, seguir la spec al pie de la letra. Ante pedidos fuera de alcance o ambigüedades, consultar al usuario en lugar de improvisar.
-
-Nota: el directorio todavía no es un repositorio git. `/spec-impl` necesita git para crear ramas, así que hay que ejecutar `git init` antes de la primera implementación.

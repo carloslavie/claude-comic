@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Comic</title>
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Web Comic</h1>
+    </header>
+    <main id="app">
+      <section class="panel" aria-labelledby="upload-heading">
+        <h2 id="upload-heading">Imágenes</h2>
+
+        <div id="drop-zone" class="drop-zone">
+          <p>Arrastrá tus imágenes acá</p>
+          <p class="drop-zone-or">o</p>
+          <label class="button">
+            Elegir archivos
+            <input
+              id="file-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              hidden
+            />
+          </label>
+          <p class="hint">JPG, PNG o WebP · máximo 40 imágenes</p>
+        </div>
+
+        <div id="messages" class="messages" role="status" aria-live="polite"></div>
+
+        <label class="field">
+          <span>Título del comic</span>
+          <input id="title-input" type="text" placeholder="Sin título = sin portada" />
+        </label>
+
+        <p id="image-count" class="image-count"></p>
+        <ol id="thumb-list" class="thumb-list"></ol>
+      </section>
+
+      <section class="panel preview-panel" aria-labelledby="preview-heading">
+        <div class="preview-header">
+          <h2 id="preview-heading">Vista previa</h2>
+          <button id="pdf-button" class="button" type="button" disabled>Descargar PDF</button>
+        </div>
+        <p id="preview-empty" class="hint">Cargá imágenes para ver las páginas.</p>
+        <div id="preview" class="preview"></div>
+      </section>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

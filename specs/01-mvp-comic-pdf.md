@@ -1,6 +1,6 @@
 # SPEC 01 — MVP: carga de imágenes, maquetado automático y exportación a PDF
 
-> **Estado:** Aprobado
+> **Estado:** Implementado
 > **Depende de:** —
 > **Fecha:** 2026-09-23
 > **Objetivo:** Una webapp que se ejecuta entera en el navegador, recibe hasta 40 imágenes, las acomoda solas en páginas A4 con estilo de historieta y descarga el resultado como PDF.
