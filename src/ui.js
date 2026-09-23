@@ -9,8 +9,12 @@ import {
   setPageColorOverride,
   clearPageColorOverride,
   prunePageColors,
+  setPageTemplateOverride,
+  clearPageTemplateOverride,
+  prunePageTemplates,
   MAX_IMAGES,
 } from './state.js';
+import { TEMPLATES } from './templates.js';
 import { buildPages } from './layout.js';
 import { renderPage, PAGE_WIDTH_MM, PAGE_HEIGHT_MM } from './render.js';
 import { exportPdf } from './pdf.js';
@@ -53,7 +57,7 @@ export function initUI() {
     pdfButton.disabled = true;
     pdfButton.textContent = 'Generando…';
     try {
-      const pages = buildPages(state.images, state.title);
+      const pages = buildPages(state.images, state.title, state.pageTemplateOverrides);
       const imagesById = new Map(state.images.map((img) => [img.id, img]));
       const backgrounds = pages.map((_, index) => resolvePageColor(index, state.pageColor, state.pageColorOverrides));
       await exportPdf(pages, imagesById, state.title, backgrounds);
@@ -71,7 +75,7 @@ export function initUI() {
   let previewFrame = 0;
   function schedulePreview() {
     cancelAnimationFrame(previewFrame);
-    previewFrame = requestAnimationFrame(() => renderPreview(preview, previewEmpty));
+    previewFrame = requestAnimationFrame(() => renderPreview(preview, previewEmpty, refresh));
   }
 
   fileInput.addEventListener('change', () => {
@@ -127,10 +131,16 @@ export function initUI() {
   refresh();
 }
 
-function renderPreview(container, emptyHint) {
-  const pages = buildPages(state.images, state.title);
+/**
+ * @param {HTMLElement} container
+ * @param {HTMLElement} emptyHint
+ * @param {() => void} onTemplateChange se llama después de cambiar la plantilla de una página
+ */
+function renderPreview(container, emptyHint, onTemplateChange) {
+  const pages = buildPages(state.images, state.title, state.pageTemplateOverrides);
   const imagesById = new Map(state.images.map((img) => [img.id, img]));
   prunePageColors(pages.length);
+  prunePageTemplates(pages.length);
   emptyHint.hidden = pages.length > 0;
 
   container.replaceChildren(
@@ -180,10 +190,71 @@ function renderPreview(container, emptyHint) {
       let picker = makePicker();
       colorControl.append(picker, resetButton);
 
-      figure.append(canvas, caption, colorControl);
+      if (page.kind === 'panels') {
+        figure.append(canvas, caption, createTemplateControl(page, index, onTemplateChange), colorControl);
+      } else {
+        figure.append(canvas, caption, colorControl);
+      }
       return figure;
     }),
   );
+}
+
+// Plantillas en el orden del desplegable: de 1 a 4 viñetas.
+const TEMPLATE_OPTIONS = Object.values(TEMPLATES).sort((a, b) => a.panels.length - b.panels.length);
+const AUTO_VALUE = 'auto';
+
+const templateText = (template) => `${template.panels.length} · ${template.label}`;
+
+/**
+ * Desplegable de plantilla de una página de viñetas, con el aviso de "no entra".
+ * Cambiarlo reconstruye toda la vista previa: el <select> ya se cerró cuando llega
+ * `change`, y la elección reacomoda las páginas siguientes.
+ * @param {{templateId: string, layoutMode: 'auto' | 'manual' | 'fallback', available: number}} page
+ * @param {number} index índice de página, 0-based
+ * @param {() => void} onChange
+ * @returns {HTMLDivElement}
+ */
+function createTemplateControl(page, index, onChange) {
+  const control = document.createElement('div');
+  control.className = 'page-template';
+
+  const select = document.createElement('select');
+  select.setAttribute('aria-label', `Plantilla de la página ${index + 1}`);
+
+  // En modo manual la plantilla del canvas es la elegida, no la automática.
+  const auto = document.createElement('option');
+  auto.value = AUTO_VALUE;
+  auto.textContent =
+    page.layoutMode === 'manual' ? 'Automático' : `Automático (${templateText(TEMPLATES[page.templateId])})`;
+
+  const options = TEMPLATE_OPTIONS.map((template) => {
+    const option = document.createElement('option');
+    option.value = template.id;
+    option.textContent = templateText(template);
+    option.disabled = template.panels.length > page.available;
+    return option;
+  });
+
+  select.append(auto, ...options);
+  select.value = page.layoutMode === 'auto' ? AUTO_VALUE : state.pageTemplateOverrides[index];
+
+  select.addEventListener('change', () => {
+    if (select.value === AUTO_VALUE) clearPageTemplateOverride(index);
+    else setPageTemplateOverride(index, select.value);
+    onChange();
+  });
+
+  control.append(select);
+
+  if (page.layoutMode === 'fallback') {
+    const warning = document.createElement('span');
+    warning.className = 'page-template-warning';
+    warning.textContent = 'No hay fotos suficientes: se usa Automático';
+    control.append(warning);
+  }
+
+  return control;
 }
 
 function renderThumbs(list) {

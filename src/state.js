@@ -1,6 +1,7 @@
 // Estado en memoria de la app y las operaciones que lo modifican.
 import { getOrientation } from './orientation.js';
 import { DEFAULT_PAGE_COLOR, prunePageColorOverrides } from './colors.js';
+import { prunePageTemplateOverrides } from './layout.js';
 
 export const MAX_IMAGES = 40;
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -10,6 +11,7 @@ export const state = {
   images: [], // ComicImage[], en el orden elegido por el usuario
   pageColor: DEFAULT_PAGE_COLOR, // string '#rrggbb', color global de fondo
   pageColorOverrides: {}, // { [pageIndex: number]: '#rrggbb' }, índice 0-based
+  pageTemplateOverrides: {}, // { [pageIndex: number]: templateId }, índice 0-based
 };
 
 let nextId = 1;
@@ -126,4 +128,29 @@ export function clearPageColorOverride(index) {
  */
 export function prunePageColors(pageCount) {
   state.pageColorOverrides = prunePageColorOverrides(state.pageColorOverrides, pageCount);
+}
+
+/**
+ * Fija la plantilla de una página; las páginas siguientes se reacomodan solas.
+ * @param {number} index índice de página, 0-based
+ * @param {string} templateId id de TEMPLATES
+ */
+export function setPageTemplateOverride(index, templateId) {
+  state.pageTemplateOverrides[index] = templateId;
+}
+
+/**
+ * Quita la plantilla elegida de una página, que vuelve al maquetado automático.
+ * @param {number} index índice de página, 0-based
+ */
+export function clearPageTemplateOverride(index) {
+  delete state.pageTemplateOverrides[index];
+}
+
+/**
+ * Descarta las plantillas elegidas de páginas que ya no existen.
+ * @param {number} pageCount
+ */
+export function prunePageTemplates(pageCount) {
+  state.pageTemplateOverrides = prunePageTemplateOverrides(state.pageTemplateOverrides, pageCount);
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPages } from '../src/layout.js';
+import { buildPages, prunePageTemplateOverrides } from '../src/layout.js';
 import { TEMPLATES } from '../src/templates.js';
 
 // Crea imágenes de prueba a partir de una cadena de orientaciones:
@@ -25,14 +25,14 @@ describe('buildPages', () => {
   describe('1 imagen', () => {
     it('usa 1-full', () => {
       expect(buildPages(makeImages('L'), '')).toEqual([
-        { kind: 'panels', templateId: '1-full', imageIds: ['img-1'] },
+        { kind: 'panels', templateId: '1-full', imageIds: ['img-1'], layoutMode: 'auto', available: 1 },
       ]);
     });
 
     it('con título agrega portada y repite la imagen en 1-full', () => {
       expect(buildPages(makeImages('P'), 'Vacaciones')).toEqual([
-        { kind: 'cover', templateId: null, imageIds: ['img-1'] },
-        { kind: 'panels', templateId: '1-full', imageIds: ['img-1'] },
+        { kind: 'cover', templateId: null, imageIds: ['img-1'], layoutMode: 'auto', available: 1 },
+        { kind: 'panels', templateId: '1-full', imageIds: ['img-1'], layoutMode: 'auto', available: 1 },
       ]);
     });
   });
@@ -54,7 +54,7 @@ describe('buildPages', () => {
   describe('3 imágenes', () => {
     it('usa 3-top-wide si la primera es landscape', () => {
       expect(buildPages(makeImages('LPP'), '')).toEqual([
-        { kind: 'panels', templateId: '3-top-wide', imageIds: ['img-1', 'img-2', 'img-3'] },
+        { kind: 'panels', templateId: '3-top-wide', imageIds: ['img-1', 'img-2', 'img-3'], layoutMode: 'auto', available: 3 },
       ]);
     });
 
@@ -74,13 +74,13 @@ describe('buildPages', () => {
   describe('4 imágenes', () => {
     it('4 portrait usan una sola página 4-grid', () => {
       expect(buildPages(makeImages('PPPP'), '')).toEqual([
-        { kind: 'panels', templateId: '4-grid', imageIds: ['img-1', 'img-2', 'img-3', 'img-4'] },
+        { kind: 'panels', templateId: '4-grid', imageIds: ['img-1', 'img-2', 'img-3', 'img-4'], layoutMode: 'auto', available: 4 },
       ]);
     });
 
     it('4 portrait con título: portada + 4-grid con las mismas 4', () => {
       const pages = buildPages(makeImages('PPPP'), 'Retratos');
-      expect(pages[0]).toEqual({ kind: 'cover', templateId: null, imageIds: ['img-1'] });
+      expect(pages[0]).toEqual({ kind: 'cover', templateId: null, imageIds: ['img-1'], layoutMode: 'auto', available: 1 });
       expect(pages[1].templateId).toBe('4-grid');
       expect(pages[1].imageIds).toEqual(['img-1', 'img-2', 'img-3', 'img-4']);
     });
@@ -98,9 +98,9 @@ describe('buildPages', () => {
     it('7 landscape sin título: 3-top-wide, 3-top-wide, 1-full', () => {
       const pages = buildPages(makeImages('LLLLLLL'), '');
       expect(pages).toEqual([
-        { kind: 'panels', templateId: '3-top-wide', imageIds: ['img-1', 'img-2', 'img-3'] },
-        { kind: 'panels', templateId: '3-top-wide', imageIds: ['img-4', 'img-5', 'img-6'] },
-        { kind: 'panels', templateId: '1-full', imageIds: ['img-7'] },
+        { kind: 'panels', templateId: '3-top-wide', imageIds: ['img-1', 'img-2', 'img-3'], layoutMode: 'auto', available: 7 },
+        { kind: 'panels', templateId: '3-top-wide', imageIds: ['img-4', 'img-5', 'img-6'], layoutMode: 'auto', available: 4 },
+        { kind: 'panels', templateId: '1-full', imageIds: ['img-7'], layoutMode: 'auto', available: 1 },
       ]);
     });
 
@@ -138,5 +138,95 @@ describe('buildPages', () => {
     it('un título con solo espacios no genera portada', () => {
       expect(buildPages(makeImages('L'), '   ')[0].kind).toBe('panels');
     });
+  });
+
+  describe('plantilla elegida por página', () => {
+    const modes = (pages) => pages.map((p) => p.layoutMode);
+
+    it('sin elecciones da el mismo resultado que sin el parámetro', () => {
+      const images = makeImages('LPSPPPPLLSPL');
+      expect(buildPages(images, 'Título', {})).toEqual(buildPages(images, 'Título'));
+    });
+
+    it('respeta la plantilla elegida y la marca como manual', () => {
+      const pages = buildPages(makeImages('LLL'), '', { 0: '2-cols' });
+      expect(pages[0]).toMatchObject({ templateId: '2-cols', imageIds: ['img-1', 'img-2'], layoutMode: 'manual' });
+    });
+
+    it('reacomoda las páginas siguientes con las imágenes que quedan', () => {
+      const pages = buildPages(makeImages('LLLLLLL'), '', { 0: '4-grid' });
+      expect(pages).toEqual([
+        { kind: 'panels', templateId: '4-grid', imageIds: ['img-1', 'img-2', 'img-3', 'img-4'], layoutMode: 'manual', available: 7 },
+        { kind: 'panels', templateId: '3-top-wide', imageIds: ['img-5', 'img-6', 'img-7'], layoutMode: 'auto', available: 3 },
+      ]);
+    });
+
+    it('conserva la elección de una página posterior aunque cambien sus imágenes', () => {
+      const pages = buildPages(makeImages('LLLLLLLLL'), '', { 0: '2-rows', 2: '1-full' });
+      expect(templateIds(pages)).toEqual(['2-rows', '3-top-wide', '1-full', '3-top-wide']);
+      expect(modes(pages)).toEqual(['manual', 'auto', 'manual', 'auto']);
+
+      const changed = buildPages(makeImages('LLLLLLLLL'), '', { 0: '4-grid', 2: '1-full' });
+      expect(templateIds(changed)).toEqual(['4-grid', '3-top-wide', '1-full', '1-full']);
+      expect(changed[2]).toMatchObject({ imageIds: ['img-8'], layoutMode: 'manual' });
+    });
+
+    it('si no quedan imágenes suficientes usa la regla automática y marca fallback', () => {
+      const pages = buildPages(makeImages('LLLLL'), '', { 1: '4-grid' });
+      expect(pages[1]).toEqual({
+        kind: 'panels',
+        templateId: '2-rows',
+        imageIds: ['img-4', 'img-5'],
+        layoutMode: 'fallback',
+        available: 2,
+      });
+    });
+
+    it('aplica la elección cuando las imágenes alcanzan justo', () => {
+      const pages = buildPages(makeImages('LLLLLLL'), '', { 1: '4-grid' });
+      expect(pages[1]).toMatchObject({ templateId: '4-grid', layoutMode: 'manual', available: 4 });
+    });
+
+    it('ignora una elección en el índice de la portada', () => {
+      const pages = buildPages(makeImages('LLL'), 'Título', { 0: '1-full' });
+      expect(pages[0]).toMatchObject({ kind: 'cover', templateId: null, layoutMode: 'auto' });
+      expect(templateIds(pages)).toEqual([null, '3-top-wide']);
+    });
+
+    it('con portada, el índice 1 es la primera página de viñetas', () => {
+      const pages = buildPages(makeImages('LLL'), 'Título', { 1: '1-full' });
+      expect(templateIds(pages)).toEqual([null, '1-full', '2-rows']);
+    });
+
+    it('ignora un id de plantilla que no existe', () => {
+      for (const bad of ['no-existe', 'constructor', 'toString']) {
+        const pages = buildPages(makeImages('LLL'), '', { 0: bad });
+        expect(pages[0]).toMatchObject({ templateId: '3-top-wide', layoutMode: 'auto' });
+      }
+    });
+
+    it('cada página sigue teniendo tantas imágenes como viñetas', () => {
+      const pages = buildPages(makeImages('LPSPPPPLLSPL'), '', { 0: '1-full', 1: '4-grid', 3: '2-cols', 5: '4-grid' });
+      for (const page of pages) {
+        expect(page.imageIds).toHaveLength(TEMPLATES[page.templateId].panels.length);
+      }
+    });
+  });
+});
+
+describe('prunePageTemplateOverrides', () => {
+  it('conserva los índices de páginas que existen y descarta el resto', () => {
+    expect(prunePageTemplateOverrides({ 0: '1-full', 2: '4-grid', 3: '2-rows' }, 3)).toEqual({ 0: '1-full', 2: '4-grid' });
+  });
+
+  it('con 0 páginas devuelve un objeto vacío', () => {
+    expect(prunePageTemplateOverrides({ 0: '1-full' }, 0)).toEqual({});
+  });
+
+  it('no muta la entrada', () => {
+    const overrides = { 0: '1-full', 5: '4-grid' };
+    const pruned = prunePageTemplateOverrides(overrides, 1);
+    expect(overrides).toEqual({ 0: '1-full', 5: '4-grid' });
+    expect(pruned).not.toBe(overrides);
   });
 });

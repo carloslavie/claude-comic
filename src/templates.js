@@ -5,10 +5,12 @@
 export const TEMPLATES = {
   '1-full': {
     id: '1-full',
+    label: 'Una sola viñeta',
     panels: [{ x: 0, y: 0, w: 1, h: 1 }],
   },
   '2-rows': {
     id: '2-rows',
+    label: 'Dos apiladas',
     panels: [
       { x: 0, y: 0, w: 1, h: 0.5 },
       { x: 0, y: 0.5, w: 1, h: 0.5 },
@@ -16,6 +18,7 @@ export const TEMPLATES = {
   },
   '2-cols': {
     id: '2-cols',
+    label: 'Dos lado a lado',
     panels: [
       { x: 0, y: 0, w: 0.5, h: 1 },
       { x: 0.5, y: 0, w: 0.5, h: 1 },
@@ -23,6 +26,7 @@ export const TEMPLATES = {
   },
   '3-top-wide': {
     id: '3-top-wide',
+    label: 'Una ancha arriba y dos abajo',
     panels: [
       { x: 0, y: 0, w: 1, h: 0.5 },
       { x: 0, y: 0.5, w: 0.5, h: 0.5 },
@@ -31,6 +35,7 @@ export const TEMPLATES = {
   },
   '3-left-tall': {
     id: '3-left-tall',
+    label: 'Una alta a la izquierda y dos a la derecha',
     panels: [
       { x: 0, y: 0, w: 0.5, h: 1 },
       { x: 0.5, y: 0, w: 0.5, h: 0.5 },
@@ -39,6 +44,7 @@ export const TEMPLATES = {
   },
   '4-grid': {
     id: '4-grid',
+    label: 'Grilla 2 × 2',
     panels: [
       { x: 0, y: 0, w: 0.5, h: 0.5 },
       { x: 0.5, y: 0, w: 0.5, h: 0.5 },
