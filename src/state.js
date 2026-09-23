@@ -2,6 +2,7 @@
 import { getOrientation } from './orientation.js';
 import { DEFAULT_PAGE_COLOR, prunePageColorOverrides } from './colors.js';
 import { prunePageTemplateOverrides } from './layout.js';
+import { DEFAULT_TITLE_STYLE } from './titleStyle.js';
 
 export const MAX_IMAGES = 40;
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -12,6 +13,7 @@ export const state = {
   pageColor: DEFAULT_PAGE_COLOR, // string '#rrggbb', color global de fondo
   pageColorOverrides: {}, // { [pageIndex: number]: '#rrggbb' }, índice 0-based
   pageTemplateOverrides: {}, // { [pageIndex: number]: templateId }, índice 0-based
+  titleStyle: { ...DEFAULT_TITLE_STYLE }, // estilo del título de la portada
 };
 
 let nextId = 1;
@@ -153,4 +155,19 @@ export function clearPageTemplateOverride(index) {
  */
 export function prunePageTemplates(pageCount) {
   state.pageTemplateOverrides = prunePageTemplateOverrides(state.pageTemplateOverrides, pageCount);
+}
+
+/**
+ * Cambia una o más opciones del estilo del título; las demás se conservan.
+ * @param {Partial<typeof DEFAULT_TITLE_STYLE>} partial por ejemplo { size: 'large' }
+ */
+export function setTitleStyle(partial) {
+  state.titleStyle = { ...state.titleStyle, ...partial };
+}
+
+/**
+ * Vuelve el estilo del título a los valores por defecto.
+ */
+export function resetTitleStyle() {
+  state.titleStyle = { ...DEFAULT_TITLE_STYLE };
 }

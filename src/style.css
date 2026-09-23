@@ -120,6 +120,69 @@ body {
   font-weight: 400;
 }
 
+.title-style {
+  margin: 16px 0 0;
+  padding: 10px 12px 12px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+}
+
+.title-style legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.title-style:disabled {
+  opacity: 0.5;
+}
+
+.title-style-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+}
+
+.title-style-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.title-style-color {
+  flex-basis: 100%;
+}
+
+.title-style-field select {
+  padding: 4px 6px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.title-style-reset {
+  margin-top: 12px;
+  padding: 4px 10px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.title-style-reset:hover:not(:disabled) {
+  background: #ffd23f;
+}
+
+.title-style:disabled select,
+.title-style:disabled button,
+.title-style:disabled input {
+  cursor: not-allowed;
+}
+
 .image-count {
   margin: 16px 0 8px;
   color: #666;

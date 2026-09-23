@@ -10,6 +10,8 @@ import {
   clearPageColorOverride,
   prunePageColors,
   setPageTemplateOverride,
+  setTitleStyle,
+  resetTitleStyle,
   clearPageTemplateOverride,
   prunePageTemplates,
   MAX_IMAGES,
@@ -19,6 +21,7 @@ import { buildPages } from './layout.js';
 import { renderPage, PAGE_WIDTH_MM, PAGE_HEIGHT_MM } from './render.js';
 import { exportPdf } from './pdf.js';
 import { resolvePageColor, PALETTE } from './colors.js';
+import { TITLE_SIZES, TITLE_FONTS, TITLE_POSITIONS, TITLE_OUTLINES } from './titleStyle.js';
 
 // Resolución de cada página en la vista previa (la mitad de los 150 DPI del PDF);
 // el CSS la escala al ancho disponible.
@@ -29,6 +32,9 @@ export function initUI() {
   const fileInput = document.getElementById('file-input');
   const dropZone = document.getElementById('drop-zone');
   const titleInput = document.getElementById('title-input');
+  const titleStyle = document.getElementById('title-style');
+  const titleStyleControls = document.getElementById('title-style-controls');
+  const titleStyleReset = document.getElementById('title-style-reset');
   const pageColor = document.getElementById('page-color');
   const thumbList = document.getElementById('thumb-list');
   const imageCount = document.getElementById('image-count');
@@ -60,7 +66,8 @@ export function initUI() {
       const pages = buildPages(state.images, state.title, state.pageTemplateOverrides);
       const imagesById = new Map(state.images.map((img) => [img.id, img]));
       const backgrounds = pages.map((_, index) => resolvePageColor(index, state.pageColor, state.pageColorOverrides));
-      await exportPdf(pages, imagesById, state.title, backgrounds);
+      await loadTitleFont();
+      await exportPdf(pages, imagesById, state.title, backgrounds, state.titleStyle);
     } catch (error) {
       console.error(error);
       showErrors(messages, ['No se pudo generar el PDF.']);
@@ -101,10 +108,43 @@ export function initUI() {
     handleFiles([...e.dataTransfer.files]);
   });
 
+  // Redibuja cuando termina de cargar la fuente del título, si hacía falta cargarla.
+  function refreshWhenTitleFontLoads() {
+    loadTitleFont().then((loaded) => {
+      if (loaded) refresh();
+    });
+  }
+
+  // Sin título no hay portada: el estilo queda deshabilitado, pero se conserva.
+  function updateTitleStyleEnabled() {
+    titleStyle.disabled = state.title.trim() === '';
+  }
+
   titleInput.addEventListener('input', () => {
     setTitle(titleInput.value);
+    updateTitleStyleEnabled();
+    refresh();
+    refreshWhenTitleFontLoads();
+  });
+
+  // Al cambiar de fuente, la nueva se carga antes de redibujar.
+  async function handleTitleStyleChange(key) {
+    if (key === 'font') await loadTitleFont();
+    refresh();
+  }
+
+  // Los selectores de color solo se actualizan al elegir un color: se vuelven a armar
+  // todos los controles con los valores por defecto. La fuente por defecto puede no
+  // estar cargada todavía.
+  titleStyleReset.addEventListener('click', async () => {
+    resetTitleStyle();
+    renderTitleStyleControls(titleStyleControls, handleTitleStyleChange);
+    await loadTitleFont();
     refresh();
   });
+
+  renderTitleStyleControls(titleStyleControls, handleTitleStyleChange);
+  updateTitleStyleEnabled();
 
   pageColor.append(
     createColorPicker({
@@ -129,6 +169,24 @@ export function initUI() {
   });
 
   refresh();
+  refreshWhenTitleFontLoads();
+}
+
+/**
+ * Carga la fuente del título para los caracteres del título actual. El canvas no espera
+ * a las fuentes: si no está cargada, dibuja con la de respaldo.
+ * @returns {Promise<boolean>} true si hubo que cargarla (y conviene redibujar)
+ */
+async function loadTitleFont() {
+  const font = `32px ${TITLE_FONTS[state.titleStyle.font].family}`;
+  const text = state.title.trim() || ' ';
+  if (document.fonts.check(font, text)) return false;
+  try {
+    await document.fonts.load(font, text);
+    return true;
+  } catch {
+    return false; // se sigue dibujando con la fuente de respaldo
+  }
 }
 
 /**
@@ -152,7 +210,14 @@ function renderPreview(container, emptyHint, onTemplateChange) {
       canvas.width = PREVIEW_WIDTH;
       canvas.height = PREVIEW_HEIGHT;
       const draw = () =>
-        renderPage(page, imagesById, canvas, state.title, resolvePageColor(index, state.pageColor, state.pageColorOverrides));
+        renderPage(
+          page,
+          imagesById,
+          canvas,
+          state.title,
+          resolvePageColor(index, state.pageColor, state.pageColorOverrides),
+          state.titleStyle,
+        );
       draw();
 
       const caption = document.createElement('figcaption');
@@ -198,6 +263,84 @@ function renderPreview(container, emptyHint, onTemplateChange) {
       return figure;
     }),
   );
+}
+
+/**
+ * Arma los controles del estilo del título con los valores actuales de state.titleStyle.
+ * @param {HTMLElement} container
+ * @param {(key: string) => void} onChange recibe la clave de state.titleStyle que cambió
+ */
+function renderTitleStyleControls(container, onChange) {
+  container.replaceChildren(
+    createTitleStyleSelect('Tamaño', TITLE_SIZES, 'size', onChange),
+    createTitleStyleSelect('Fuente', TITLE_FONTS, 'font', onChange),
+    createTitleStyleSelect('Posición', TITLE_POSITIONS, 'position', onChange),
+    createTitleStyleColor('Color del texto', 'color', onChange),
+    createTitleStyleColor('Color del contorno', 'outlineColor', onChange),
+    createTitleStyleSelect('Grosor del contorno', TITLE_OUTLINES, 'outline', onChange),
+  );
+}
+
+/**
+ * Selector de color de una opción del estilo del título.
+ * @param {string} label
+ * @param {string} key clave de state.titleStyle
+ * @param {(key: string) => void} onChange
+ * @returns {HTMLDivElement}
+ */
+function createTitleStyleColor(label, key, onChange) {
+  const field = document.createElement('div');
+  field.className = 'title-style-field title-style-color';
+
+  const text = document.createElement('span');
+  text.textContent = label;
+
+  field.append(
+    text,
+    createColorPicker({
+      value: state.titleStyle[key],
+      label,
+      onChange: (color) => {
+        setTitleStyle({ [key]: color });
+        onChange(key);
+      },
+    }),
+  );
+  return field;
+}
+
+/**
+ * Desplegable de una opción del estilo del título, con las opciones de `catalog` en orden.
+ * @param {string} label
+ * @param {Record<string, {label: string}>} catalog
+ * @param {string} key clave de state.titleStyle
+ * @param {(key: string) => void} onChange
+ * @returns {HTMLLabelElement}
+ */
+function createTitleStyleSelect(label, catalog, key, onChange) {
+  const field = document.createElement('label');
+  field.className = 'title-style-field';
+
+  const text = document.createElement('span');
+  text.textContent = label;
+
+  const select = document.createElement('select');
+  select.append(
+    ...Object.entries(catalog).map(([value, item]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = item.label;
+      return option;
+    }),
+  );
+  select.value = state.titleStyle[key];
+  select.addEventListener('change', () => {
+    setTitleStyle({ [key]: select.value });
+    onChange(key);
+  });
+
+  field.append(text, select);
+  return field;
 }
 
 // Plantillas en el orden del desplegable: de 1 a 4 viñetas.
