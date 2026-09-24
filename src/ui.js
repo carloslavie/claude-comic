@@ -21,7 +21,9 @@ import { TEMPLATES } from './templates.js';
 import { buildPages } from './layout.js';
 import { renderPage, PAGE_WIDTH_MM, PAGE_HEIGHT_MM } from './render.js';
 import { exportPdf } from './pdf.js';
-import { resolvePageColor, PALETTE } from './colors.js';
+import { resolvePageColor } from './colors.js';
+import { createColorPicker } from './colorPicker.js';
+import { showMessages, showErrors } from './messages.js';
 import { TITLE_SIZES, TITLE_FONTS, TITLE_POSITIONS, TITLE_OUTLINES } from './titleStyle.js';
 import { PDF_FORMATS } from './pdfFormat.js';
 
@@ -453,55 +455,6 @@ function renderThumbs(list) {
   );
 }
 
-/**
- * Selector de color: botones con la paleta predefinida y un <input type="color"> libre.
- * Marca con aria-pressed el botón que coincide con el color actual y se actualiza solo
- * cuando el usuario elige un color.
- * @param {{value: string, onChange: (color: string) => void, label: string}} options
- * @returns {HTMLDivElement}
- */
-function createColorPicker({ value, onChange, label }) {
-  const picker = document.createElement('div');
-  picker.className = 'color-picker';
-  picker.setAttribute('role', 'group');
-  picker.setAttribute('aria-label', label);
-
-  const swatches = PALETTE.map(({ name, value: color }) => {
-    const swatch = document.createElement('button');
-    swatch.type = 'button';
-    swatch.className = 'color-swatch';
-    swatch.style.backgroundColor = color;
-    swatch.dataset.color = color;
-    swatch.setAttribute('aria-label', name);
-    swatch.title = name;
-    swatch.addEventListener('click', () => select(color));
-    return swatch;
-  });
-
-  const custom = document.createElement('input');
-  custom.type = 'color';
-  custom.className = 'color-custom';
-  custom.setAttribute('aria-label', `${label}: otro color`);
-  custom.title = 'Otro color';
-  custom.addEventListener('input', () => select(custom.value));
-
-  function mark(color) {
-    custom.value = color;
-    for (const swatch of swatches) {
-      swatch.setAttribute('aria-pressed', String(swatch.dataset.color === color));
-    }
-  }
-
-  function select(color) {
-    mark(color);
-    onChange(color);
-  }
-
-  mark(value);
-  picker.append(...swatches, custom);
-  return picker;
-}
-
 function makeButton(action, label, ariaLabel, disabled) {
   const button = document.createElement('button');
   button.type = 'button';
@@ -511,42 +464,4 @@ function makeButton(action, label, ariaLabel, disabled) {
   button.title = ariaLabel;
   button.disabled = disabled;
   return button;
-}
-
-function showMessages(container, rejected) {
-  const byReason = (reason) => rejected.filter((r) => r.reason === reason);
-  const lines = [];
-
-  const badType = byReason('type');
-  if (badType.length) {
-    lines.push(`Formato no admitido (solo JPG, PNG o WebP): ${names(badType)}.`);
-  }
-  const badDecode = byReason('decode');
-  if (badDecode.length) {
-    lines.push(`No se pudieron leer: ${names(badDecode)}.`);
-  }
-  const overLimit = byReason('limit');
-  if (overLimit.length) {
-    const n = overLimit.length;
-    lines.push(
-      `Se alcanzó el límite de ${MAX_IMAGES} imágenes: ${n} ${n === 1 ? 'imagen rechazada' : 'imágenes rechazadas'}.`,
-    );
-  }
-
-  showErrors(container, lines);
-}
-
-function showErrors(container, lines) {
-  container.replaceChildren(
-    ...lines.map((text) => {
-      const p = document.createElement('p');
-      p.className = 'message message-error';
-      p.textContent = text;
-      return p;
-    }),
-  );
-}
-
-function names(items) {
-  return items.map((r) => r.name).join(', ');
 }

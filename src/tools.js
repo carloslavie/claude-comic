@@ -16,7 +16,7 @@ export const TOOLS = {
     title: 'Creá imágenes para cuadros',
     description: 'Prepará tus fotos para imprimir y enmarcar.',
     tabTitle: 'Cuadros',
-    available: false,
+    available: true,
   },
   stickers: {
     id: 'stickers',

@@ -7,8 +7,10 @@ import '@fontsource/m-plus-rounded-1c';
 import '@fontsource/dela-gothic-one';
 import './style.css';
 import { initUI } from './ui.js';
+import { initFramesUI } from './frameUi.js';
 import { initHome } from './home.js';
 
-// El comic se inicializa una sola vez, aunque se entre por el menú: así su estado se conserva entre vistas.
+// Cada herramienta se inicializa una sola vez, aunque se entre por el menú: así su estado se conserva entre vistas.
 initUI();
+initFramesUI();
 initHome();

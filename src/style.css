@@ -148,7 +148,8 @@ a.tool-card:focus-visible {
   letter-spacing: 0.04em;
 }
 
-#comic-view {
+#comic-view,
+#frames-view {
   display: grid;
   gap: 24px;
   align-items: start;
@@ -156,12 +157,14 @@ a.tool-card:focus-visible {
 }
 
 /* `display: grid` le gana a `hidden`: sin esto la vista oculta se vería. */
-#comic-view[hidden] {
+#comic-view[hidden],
+#frames-view[hidden] {
   display: none;
 }
 
 @media (min-width: 1000px) {
-  #comic-view {
+  #comic-view,
+  #frames-view {
     grid-template-columns: minmax(360px, 440px) 1fr;
   }
 }
@@ -541,4 +544,146 @@ a.tool-card:focus-visible {
 .page-color-reset:disabled {
   opacity: 0.3;
   cursor: default;
+}
+
+/* Cuadros */
+
+.field select {
+  padding: 8px 10px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.field select option:disabled {
+  color: #999;
+}
+
+.frames-custom-size {
+  display: flex;
+  gap: 12px;
+}
+
+.frames-custom-size[hidden] {
+  display: none;
+}
+
+.frames-custom-size .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.frames-mat-color {
+  margin: 16px 0 0;
+  padding: 10px 12px 12px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+}
+
+.frames-mat-color legend {
+  padding: 0 4px;
+  font-weight: 600;
+}
+
+.frames-mat-color:disabled {
+  opacity: 0.5;
+}
+
+.frames-mat-color:disabled button,
+.frames-mat-color:disabled input {
+  cursor: not-allowed;
+}
+
+.frames-sheet-count {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.frames-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.frame-card {
+  margin: 0;
+}
+
+.frame-card canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  touch-action: none;
+  cursor: grab;
+}
+
+.frame-card canvas.is-dragging {
+  cursor: grabbing;
+}
+
+.frame-card-warning {
+  margin: 6px 0 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: #fde2e1;
+  color: #8a1c14;
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.frame-card-warning[hidden] {
+  display: none;
+}
+
+.frame-card-zoom {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+}
+
+.frame-card-zoom span {
+  flex: none;
+  min-width: 6.5em;
+}
+
+.frame-card-zoom input {
+  flex: 1;
+  min-width: 0;
+}
+
+.frame-card figcaption {
+  margin-top: 6px;
+  color: #666;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.frame-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.frame-card-button {
+  padding: 2px 10px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.frame-card-button:hover:not(:disabled) {
+  background: #ffd23f;
 }
