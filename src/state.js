@@ -4,6 +4,7 @@ import { DEFAULT_PAGE_COLOR, prunePageColorOverrides } from './colors.js';
 import { prunePageTemplateOverrides } from './layout.js';
 import { DEFAULT_TITLE_STYLE } from './titleStyle.js';
 import { DEFAULT_PDF_FORMAT, PDF_FORMATS } from './pdfFormat.js';
+import { DEFAULT_CROP } from './crop.js';
 
 export const MAX_IMAGES = 40;
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -63,6 +64,7 @@ export async function addFiles(files) {
       width: bitmap.width,
       height: bitmap.height,
       orientation: getOrientation(bitmap.width, bitmap.height),
+      crop: { ...DEFAULT_CROP },
     });
   }
 
@@ -92,6 +94,27 @@ export function removeImage(id) {
   if (index === -1) return;
   const [img] = state.images.splice(index, 1);
   URL.revokeObjectURL(img.url);
+}
+
+/**
+ * Guarda el encuadre de una foto en su viñeta. El encuadre viaja con la foto.
+ * @param {string} id
+ * @param {{zoom: number, centerX: number, centerY: number}} crop
+ */
+export function setImageCrop(id, crop) {
+  const img = state.images.find((image) => image.id === id);
+  if (!img) return;
+  img.crop = { zoom: crop.zoom, centerX: crop.centerX, centerY: crop.centerY };
+}
+
+/**
+ * Vuelve el encuadre de una foto a zoom 100 % y foto centrada.
+ * @param {string} id
+ */
+export function resetImageCrop(id) {
+  const img = state.images.find((image) => image.id === id);
+  if (!img) return;
+  img.crop = { ...DEFAULT_CROP };
 }
 
 /**

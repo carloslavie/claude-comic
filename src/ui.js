@@ -15,11 +15,16 @@ import {
   clearPageTemplateOverride,
   prunePageTemplates,
   setPdfFormat,
+  setImageCrop,
+  resetImageCrop,
   MAX_IMAGES,
 } from './state.js';
 import { TEMPLATES } from './templates.js';
 import { buildPages } from './layout.js';
 import { renderPage, PAGE_WIDTH_MM, PAGE_HEIGHT_MM } from './render.js';
+import { panelRects, panelAt } from './panelGeometry.js';
+import { panCrop } from './crop.js';
+import { createZoomControl, makeCardButton } from './cropControls.js';
 import { exportPdf } from './pdf.js';
 import { resolvePageColor } from './colors.js';
 import { createColorPicker } from './colorPicker.js';
@@ -31,6 +36,18 @@ import { PDF_FORMATS } from './pdfFormat.js';
 // el CSS la escala al ancho disponible.
 const PREVIEW_WIDTH = 620;
 const PREVIEW_HEIGHT = Math.round((PREVIEW_WIDTH * PAGE_HEIGHT_MM) / PAGE_WIDTH_MM);
+
+// Contorno de la viñeta seleccionada, solo en la vista previa: acento con un filete oscuro
+// por dentro para que se vea sobre fotos claras y oscuras.
+const SELECTION_COLOR = '#ffd23f';
+const SELECTION_SHADOW = 'rgba(0, 0, 0, 0.6)';
+const SELECTION_MM = 1.6;
+
+// Foto de la viñeta seleccionada (una sola en toda la vista previa), o null. Se guarda
+// el id de la foto para que la selección sobreviva a los rearmados de la vista previa.
+let selectedImageId = null;
+// Páginas de la vista previa actual: { page, draw, updateCropBlock }.
+let pageViews = [];
 
 export function initUI() {
   const fileInput = document.getElementById('file-input');
@@ -193,8 +210,48 @@ export function initUI() {
     refresh();
   });
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !document.getElementById('comic-view').hidden) selectImage(null);
+  });
+
   refresh();
   refreshWhenTitleFontLoads();
+}
+
+/**
+ * Selecciona la viñeta de la foto `id` (null deselecciona). Redibuja solo las páginas
+ * que pierden o ganan la selección, sin rearmar la vista previa.
+ * @param {string | null} id
+ */
+function selectImage(id) {
+  if (id === selectedImageId) return;
+  const affected = pageViews.filter(
+    (view) => view.page.imageIds.includes(selectedImageId) || view.page.imageIds.includes(id),
+  );
+  selectedImageId = id;
+  for (const view of affected) {
+    view.draw();
+    view.updateCropBlock();
+  }
+}
+
+// Contorno de la viñeta seleccionada, si está en esta página, por dentro de la viñeta.
+function drawSelection(canvas, page) {
+  const index = page.imageIds.indexOf(selectedImageId);
+  if (index === -1) return;
+  const mm = canvas.width / PAGE_WIDTH_MM;
+  const r = panelRects(page)[index];
+  const lw = SELECTION_MM * mm;
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.lineJoin = 'miter';
+  ctx.lineWidth = lw;
+  ctx.strokeStyle = SELECTION_COLOR;
+  ctx.strokeRect(r.x * mm + lw / 2, r.y * mm + lw / 2, r.width * mm - lw, r.height * mm - lw);
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = SELECTION_SHADOW;
+  ctx.strokeRect(r.x * mm + lw + 0.5, r.y * mm + lw + 0.5, r.width * mm - 2 * lw - 1, r.height * mm - 2 * lw - 1);
+  ctx.restore();
 }
 
 /**
@@ -226,6 +283,10 @@ function renderPreview(container, emptyHint, onTemplateChange) {
   prunePageTemplates(pages.length);
   emptyHint.hidden = pages.length > 0;
 
+  // La foto seleccionada puede haberse quitado: entonces no queda nada seleccionado.
+  if (!pages.some((page) => page.imageIds.includes(selectedImageId))) selectedImageId = null;
+  pageViews = [];
+
   container.replaceChildren(
     ...pages.map((page, index) => {
       const figure = document.createElement('figure');
@@ -234,7 +295,7 @@ function renderPreview(container, emptyHint, onTemplateChange) {
       const canvas = document.createElement('canvas');
       canvas.width = PREVIEW_WIDTH;
       canvas.height = PREVIEW_HEIGHT;
-      const draw = () =>
+      const draw = () => {
         renderPage(
           page,
           imagesById,
@@ -243,10 +304,95 @@ function renderPreview(container, emptyHint, onTemplateChange) {
           resolvePageColor(index, state.pageColor, state.pageColorOverrides),
           state.titleStyle,
         );
+        drawSelection(canvas, page);
+      };
       draw();
+
+      // Viñeta con foto bajo el puntero: { id, area } con el área en mm, o null.
+      const panelUnder = (e) => {
+        const box = canvas.getBoundingClientRect();
+        const x = ((e.clientX - box.left) / box.width) * PAGE_WIDTH_MM;
+        const y = ((e.clientY - box.top) / box.height) * PAGE_HEIGHT_MM;
+        const panel = panelAt(page, x, y);
+        const id = page.imageIds[panel];
+        return id ? { id, area: panelRects(page)[panel] } : null;
+      };
+
+      // Presionar una viñeta con foto la selecciona; el margen o el medianil deseleccionan.
+      // Con el mouse, el mismo gesto arrastra la foto. Con el dedo, el primer toque solo
+      // selecciona: hasta entonces el canvas deja scrollear la página (touch-action).
+      let drag = null;
+      canvas.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        const hit = panelUnder(e);
+        const wasSelected = hit !== null && hit.id === selectedImageId;
+        selectImage(hit ? hit.id : null);
+        if (!hit || (e.pointerType === 'touch' && !wasSelected)) return;
+        e.preventDefault();
+        canvas.setPointerCapture(e.pointerId);
+        canvas.classList.add('is-dragging');
+        drag = { ...hit, x: e.clientX, y: e.clientY };
+      });
+      canvas.addEventListener('pointermove', (e) => {
+        if (!drag) {
+          canvas.classList.toggle('is-over-panel', panelUnder(e) !== null);
+          return;
+        }
+        const image = imagesById.get(drag.id);
+        const box = canvas.getBoundingClientRect();
+        const areaW = box.width * (drag.area.width / PAGE_WIDTH_MM);
+        const areaH = box.height * (drag.area.height / PAGE_HEIGHT_MM);
+        const dx = (e.clientX - drag.x) / areaW;
+        const dy = (e.clientY - drag.y) / areaH;
+        drag.x = e.clientX;
+        drag.y = e.clientY;
+        const { width, height } = drag.area;
+        setImageCrop(image.id, panCrop(image.width, image.height, width, height, image.crop, dx, dy));
+        draw();
+      });
+      const endDrag = () => {
+        drag = null;
+        canvas.classList.remove('is-dragging');
+      };
+      canvas.addEventListener('pointerup', endDrag);
+      canvas.addEventListener('pointercancel', endDrag);
 
       const caption = document.createElement('figcaption');
       caption.textContent = `${index + 1} · ${page.kind === 'cover' ? 'portada' : page.templateId}`;
+
+      const cropBlock = document.createElement('div');
+      cropBlock.className = 'panel-crop';
+      const updateCropBlock = () => {
+        const panel = page.imageIds.indexOf(selectedImageId);
+        cropBlock.hidden = panel === -1;
+        canvas.classList.toggle('has-selection', panel !== -1);
+        if (panel === -1) {
+          cropBlock.replaceChildren();
+          return;
+        }
+        const image = imagesById.get(selectedImageId);
+        const area = panelRects(page)[panel];
+
+        const heading = document.createElement('p');
+        heading.className = 'panel-crop-title';
+        heading.textContent = `Encuadre de la viñeta ${panel + 1}`;
+
+        const zoom = createZoomControl({ image, area, setCrop: setImageCrop, onChange: draw });
+
+        const actions = document.createElement('div');
+        actions.className = 'frame-card-actions';
+        actions.append(
+          makeCardButton('Centrar', `Centrar la foto de la viñeta ${panel + 1}`, () => {
+            resetImageCrop(image.id);
+            zoom.sync();
+            draw();
+          }),
+        );
+
+        cropBlock.replaceChildren(heading, zoom.element, actions);
+      };
+      updateCropBlock();
+      pageViews.push({ page, draw, updateCropBlock });
 
       // Los cambios de color de una página redibujan solo su canvas: reconstruir toda la
       // vista previa cerraría el selector nativo mientras se arrastra.
@@ -281,9 +427,9 @@ function renderPreview(container, emptyHint, onTemplateChange) {
       colorControl.append(picker, resetButton);
 
       if (page.kind === 'panels') {
-        figure.append(canvas, caption, createTemplateControl(page, index, onTemplateChange), colorControl);
+        figure.append(canvas, caption, cropBlock, createTemplateControl(page, index, onTemplateChange), colorControl);
       } else {
-        figure.append(canvas, caption, colorControl);
+        figure.append(canvas, caption, cropBlock, colorControl);
       }
       return figure;
     }),

@@ -1,19 +1,16 @@
 // Dibuja una página del comic en un canvas. Lo usan la vista previa y el PDF.
-import { TEMPLATES } from './templates.js';
 import { DEFAULT_PAGE_COLOR } from './colors.js';
 import { DEFAULT_TITLE_STYLE, TITLE_SIZES, TITLE_FONTS, TITLE_OUTLINES, titleBlockTop } from './titleStyle.js';
+import { PAGE_WIDTH_MM, panelRects } from './panelGeometry.js';
+import { DEFAULT_CROP, cropRect } from './crop.js';
 
-// Medidas de página en mm (A4 vertical).
-export const PAGE_WIDTH_MM = 210;
-export const PAGE_HEIGHT_MM = 297;
-const MARGIN_MM = 10;
-const GUTTER_MM = 4;
+export { PAGE_WIDTH_MM, PAGE_HEIGHT_MM } from './panelGeometry.js';
+
 const BORDER_MM = 0.8;
 
 const TITLE_MIN_SIZE_MM = 6;
 const TITLE_MAX_WIDTH = 0.85; // fracción del ancho de la viñeta
 const TITLE_MAX_HEIGHT = 0.6; // fracción del alto de la viñeta
-const EPSILON = 1e-6;
 
 /**
  * Dibuja `page` ocupando todo el canvas. El canvas debe tener proporción A4 vertical;
@@ -41,44 +38,30 @@ export function renderPage(
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   // La portada usa una sola viñeta que ocupa toda el área útil.
-  const panels = page.kind === 'cover' ? TEMPLATES['1-full'].panels : TEMPLATES[page.templateId].panels;
+  const rects = panelRects(page).map((r) => toPx(r, mm));
 
-  panels.forEach((panel, i) => {
-    const rect = panelRect(panel, mm);
+  rects.forEach((rect, i) => {
     const image = imagesById.get(page.imageIds[i]);
     if (image) drawCover(ctx, image, rect);
     drawBorder(ctx, rect, mm);
   });
 
   if (page.kind === 'cover' && title.trim() !== '') {
-    drawTitle(ctx, title.trim(), panelRect(panels[0], mm), mm, titleStyle);
+    drawTitle(ctx, title.trim(), rects[0], mm, titleStyle);
   }
 
   ctx.restore();
 }
 
-// Convierte una viñeta en fracciones del área útil a un rectángulo en px,
-// descontando medio medianil en cada lado interno.
-function panelRect(panel, mm) {
-  const usableW = PAGE_WIDTH_MM - 2 * MARGIN_MM;
-  const usableH = PAGE_HEIGHT_MM - 2 * MARGIN_MM;
-  const half = GUTTER_MM / 2;
-
-  const left = MARGIN_MM + panel.x * usableW + (panel.x > EPSILON ? half : 0);
-  const top = MARGIN_MM + panel.y * usableH + (panel.y > EPSILON ? half : 0);
-  const right = MARGIN_MM + (panel.x + panel.w) * usableW - (panel.x + panel.w < 1 - EPSILON ? half : 0);
-  const bottom = MARGIN_MM + (panel.y + panel.h) * usableH - (panel.y + panel.h < 1 - EPSILON ? half : 0);
-
-  return { x: left * mm, y: top * mm, w: (right - left) * mm, h: (bottom - top) * mm };
+// Pasa un rectángulo de viñeta en mm a px.
+function toPx(rect, mm) {
+  return { x: rect.x * mm, y: rect.y * mm, w: rect.width * mm, h: rect.height * mm };
 }
 
-// Dibuja la imagen llenando el rectángulo con recorte centrado, sin deformarla.
+// Dibuja la imagen llenando el rectángulo, sin deformarla, con el encuadre de la foto
+// (con DEFAULT_CROP es el recorte cover centrado).
 function drawCover(ctx, image, rect) {
-  const scale = Math.max(rect.w / image.width, rect.h / image.height);
-  const sw = rect.w / scale;
-  const sh = rect.h / scale;
-  const sx = (image.width - sw) / 2;
-  const sy = (image.height - sh) / 2;
+  const { sx, sy, sw, sh } = cropRect(image.width, image.height, rect.w, rect.h, image.crop ?? DEFAULT_CROP);
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(image.bitmap, sx, sy, sw, sh, rect.x, rect.y, rect.w, rect.h);
 }

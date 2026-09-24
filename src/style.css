@@ -399,12 +399,46 @@ a.tool-card:focus-visible {
   width: 100%;
   height: auto;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  /* Sin selección se puede scrollear con el dedo; con la viñeta seleccionada, el dedo la arrastra. */
+  touch-action: pan-y pinch-zoom;
+}
+
+.preview-page canvas.has-selection {
+  touch-action: none;
+}
+
+.preview-page canvas.is-over-panel {
+  cursor: grab;
+}
+
+.preview-page canvas.is-dragging {
+  cursor: grabbing;
 }
 
 .preview-page figcaption {
   margin-top: 6px;
   color: #666;
   font-size: 0.85rem;
+  text-align: center;
+}
+
+/* Encuadre de la viñeta seleccionada, debajo de su página. */
+.panel-crop {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border: 2px solid #ffd23f;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.panel-crop[hidden] {
+  display: none;
+}
+
+.panel-crop-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
   text-align: center;
 }
 
