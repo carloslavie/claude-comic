@@ -152,6 +152,78 @@
           <div id="frames-preview" class="frames-preview"></div>
         </section>
       </div>
+
+      <div id="stickers-view" data-view="stickers" hidden>
+        <section class="panel" aria-labelledby="stickers-upload-heading">
+          <h2 id="stickers-upload-heading">Fotos</h2>
+
+          <div id="stickers-drop-zone" class="drop-zone">
+            <p>Arrastrá tus fotos acá</p>
+            <p class="drop-zone-or">o</p>
+            <label class="button">
+              Elegir archivos
+              <input
+                id="stickers-file-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                hidden
+              />
+            </label>
+            <p class="hint">JPG, PNG o WebP · máximo 40 fotos</p>
+          </div>
+
+          <div id="stickers-messages" class="messages" role="status" aria-live="polite"></div>
+
+          <label class="field">
+            <span>Forma</span>
+            <select id="stickers-shape"></select>
+          </label>
+
+          <label class="field">
+            <span>Tamaño</span>
+            <select id="stickers-size"></select>
+          </label>
+
+          <div id="stickers-custom-size" class="frames-custom-size" hidden>
+            <label class="field">
+              <span>Tamaño (cm)</span>
+              <input id="stickers-custom-input" type="number" min="2" max="19" step="0.1" />
+            </label>
+          </div>
+          <p id="stickers-size-error" class="message message-error" role="alert" hidden>
+            El tamaño tiene que ir de 2 a 19 cm.
+          </p>
+
+          <label class="field">
+            <span>Borde</span>
+            <select id="stickers-border"></select>
+          </label>
+
+          <fieldset id="stickers-border-color" class="frames-mat-color">
+            <legend>Color del borde</legend>
+          </fieldset>
+
+          <label class="field">
+            <span>Hoja</span>
+            <select id="stickers-sheet"></select>
+          </label>
+
+          <p id="stickers-count" class="image-count"></p>
+        </section>
+
+        <section class="panel preview-panel" aria-labelledby="stickers-preview-heading">
+          <div class="preview-header">
+            <h2 id="stickers-preview-heading">Vista previa</h2>
+            <div class="pdf-actions">
+              <p id="stickers-sheet-count" class="frames-sheet-count"></p>
+              <button id="stickers-pdf-button" class="button" type="button" disabled>Descargar PDF</button>
+            </div>
+          </div>
+          <p id="stickers-preview-empty" class="hint">Cargá fotos para ver los stickers.</p>
+          <div id="stickers-preview" class="frames-preview"></div>
+        </section>
+      </div>
     </main>
     <script type="module" src="/src/main.js"></script>
   </body>

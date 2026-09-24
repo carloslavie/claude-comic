@@ -18,8 +18,8 @@ describe('resolveRoute', () => {
     expect(resolveRoute('#/cuadros')).toEqual({ view: 'cuadros', hash: '#/cuadros' });
   });
 
-  it('manda al menú las herramientas no disponibles', () => {
-    expect(resolveRoute('#/stickers')).toEqual({ view: 'home', hash: '#/' });
+  it('con #/stickers muestra los stickers', () => {
+    expect(resolveRoute('#/stickers')).toEqual({ view: 'stickers', hash: '#/stickers' });
   });
 
   it('manda al menú un hash desconocido', () => {
@@ -35,6 +35,7 @@ describe('documentTitle', () => {
   it('en el comic antepone el nombre de la herramienta', () => {
     expect(documentTitle('comic')).toBe('Comic · PictureFactory');
     expect(documentTitle('cuadros')).toBe('Cuadros · PictureFactory');
+    expect(documentTitle('stickers')).toBe('Stickers · PictureFactory');
   });
 
   it('una vista desconocida devuelve el nombre de la app', () => {

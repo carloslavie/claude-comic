@@ -23,7 +23,7 @@ export const TOOLS = {
     title: 'Creá plantillas para stickers',
     description: 'Armá hojas de stickers listas para imprimir y recortar.',
     tabTitle: 'Stickers',
-    available: false,
+    available: true,
   },
 };
 

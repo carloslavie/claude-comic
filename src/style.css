@@ -149,7 +149,8 @@ a.tool-card:focus-visible {
 }
 
 #comic-view,
-#frames-view {
+#frames-view,
+#stickers-view {
   display: grid;
   gap: 24px;
   align-items: start;
@@ -158,13 +159,15 @@ a.tool-card:focus-visible {
 
 /* `display: grid` le gana a `hidden`: sin esto la vista oculta se vería. */
 #comic-view[hidden],
-#frames-view[hidden] {
+#frames-view[hidden],
+#stickers-view[hidden] {
   display: none;
 }
 
 @media (min-width: 1000px) {
   #comic-view,
-  #frames-view {
+  #frames-view,
+  #stickers-view {
     grid-template-columns: minmax(360px, 440px) 1fr;
   }
 }
@@ -686,4 +689,27 @@ a.tool-card:focus-visible {
 
 .frame-card-button:hover:not(:disabled) {
   background: #ffd23f;
+}
+
+/* El sticker tiene forma: la sombra sigue el contorno en lugar de ser un rectángulo. */
+.sticker-card canvas {
+  box-shadow: none;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.sticker-card-copies {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+}
+
+.sticker-card-copies input {
+  width: 4.5em;
+  padding: 2px 6px;
+  border: 2px solid #1a1a1a;
+  border-radius: 6px;
+  font: inherit;
 }

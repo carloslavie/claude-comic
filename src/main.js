@@ -8,9 +8,11 @@ import '@fontsource/dela-gothic-one';
 import './style.css';
 import { initUI } from './ui.js';
 import { initFramesUI } from './frameUi.js';
+import { initStickersUI } from './stickerUi.js';
 import { initHome } from './home.js';
 
 // Cada herramienta se inicializa una sola vez, aunque se entre por el menú: así su estado se conserva entre vistas.
 initUI();
 initFramesUI();
+initStickersUI();
 initHome();

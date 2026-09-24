@@ -16,7 +16,8 @@ import {
 } from './frameState.js';
 import { MAX_IMAGES } from './state.js';
 import { FRAME_SIZES, MATS, fullSheetFor, frameDimensions, photoArea } from './frameSizes.js';
-import { ZOOM_MIN, ZOOM_MAX, clampCrop, panCrop, cropDpi, isLowResolution } from './crop.js';
+import { cropDpi, isLowResolution } from './crop.js';
+import { attachCropDrag, createZoomControl, makeCardButton } from './cropControls.js';
 import { FRAME_SHEETS, frameFits, packFrames, fullSheetPages } from './sheetLayout.js';
 import { frameFor, renderFrame } from './frameRender.js';
 import { exportFramesPdf } from './framePdf.js';
@@ -231,22 +232,6 @@ function createFrameCard(image, size, onChange) {
   warning.className = 'frame-card-warning';
   warning.textContent = 'Baja resolución: puede verse pixelada';
 
-  const zoomField = document.createElement('label');
-  zoomField.className = 'frame-card-zoom';
-  const zoomLabel = document.createElement('span');
-  const zoom = document.createElement('input');
-  zoom.type = 'range';
-  zoom.min = String(ZOOM_MIN * 100);
-  zoom.max = String(ZOOM_MAX * 100);
-  zoom.step = '1';
-  zoomField.append(zoomLabel, zoom);
-
-  function syncZoom() {
-    const percent = Math.round(image.crop.zoom * 100);
-    zoom.value = String(percent);
-    zoomLabel.textContent = `Zoom ${percent} %`;
-  }
-
   let drawFrame = 0;
   function scheduleDraw() {
     cancelAnimationFrame(drawFrame);
@@ -258,40 +243,8 @@ function createFrameCard(image, size, onChange) {
     warning.hidden = !isLowResolution(dpi);
   }
 
-  // Arrastre: la foto sigue al puntero. El desplazamiento se mide en fracciones del área
-  // de la foto en pantalla, así no depende del tamaño con que se muestra el canvas.
-  let last = null;
-  canvas.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    canvas.setPointerCapture(e.pointerId);
-    canvas.classList.add('is-dragging');
-    last = { x: e.clientX, y: e.clientY };
-  });
-  canvas.addEventListener('pointermove', (e) => {
-    if (!last) return;
-    const box = canvas.getBoundingClientRect();
-    const areaW = box.width * (area.width / frame.width);
-    const areaH = box.height * (area.height / frame.height);
-    const dx = (e.clientX - last.x) / areaW;
-    const dy = (e.clientY - last.y) / areaH;
-    last = { x: e.clientX, y: e.clientY };
-    setFrameCrop(image.id, panCrop(image.width, image.height, area.width, area.height, image.crop, dx, dy));
-    scheduleDraw();
-  });
-  const endDrag = () => {
-    last = null;
-    canvas.classList.remove('is-dragging');
-  };
-  canvas.addEventListener('pointerup', endDrag);
-  canvas.addEventListener('pointercancel', endDrag);
-
-  zoom.addEventListener('input', () => {
-    const crop = { ...image.crop, zoom: zoom.valueAsNumber / 100 };
-    setFrameCrop(image.id, clampCrop(image.width, image.height, area.width, area.height, crop));
-    syncZoom();
-    scheduleDraw();
-  });
+  attachCropDrag(canvas, { image, area, outer: frame, setCrop: setFrameCrop, onChange: scheduleDraw });
+  const zoom = createZoomControl({ image, area, setCrop: setFrameCrop, onChange: scheduleDraw });
 
   const actions = document.createElement('div');
   actions.className = 'frame-card-actions';
@@ -301,7 +254,7 @@ function createFrameCard(image, size, onChange) {
   });
   const center = makeCardButton('Centrar', `Centrar la foto de ${image.name}`, () => {
     resetFrameCrop(image.id);
-    syncZoom();
+    zoom.sync();
     scheduleDraw();
   });
   const remove = makeCardButton('Quitar', `Quitar ${image.name}`, () => {
@@ -310,21 +263,9 @@ function createFrameCard(image, size, onChange) {
   });
   actions.append(rotate, center, remove);
 
-  syncZoom();
   draw();
-  figure.append(canvas, caption, warning, zoomField, actions);
+  figure.append(canvas, caption, warning, zoom.element, actions);
   return figure;
-}
-
-function makeCardButton(label, ariaLabel, onClick) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'frame-card-button';
-  button.textContent = label;
-  button.setAttribute('aria-label', ariaLabel);
-  button.title = ariaLabel;
-  button.addEventListener('click', onClick);
-  return button;
 }
 
 /**
