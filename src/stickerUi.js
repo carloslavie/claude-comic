@@ -32,7 +32,8 @@ import { attachCropDrag, createZoomControl, makeCardButton } from './cropControl
 import { createColorPicker } from './colorPicker.js';
 import { showMessages, showErrors } from './messages.js';
 
-// Lado, en px, del canvas de cada sticker en la vista previa; el CSS lo escala.
+// Lado largo, en px, del canvas de cada sticker en la vista previa; el corto va en proporción.
+// El CSS lo escala.
 const PREVIEW_SIDE = 400;
 
 export function initStickersUI() {
@@ -188,7 +189,8 @@ function countText() {
 function sheetCountText() {
   if (stickerState.images.length === 0) return '';
   const sheet = stickerState.sheet;
-  const packed = packFrames(expandCopies(stickerState.images, currentStickerSize()), sheet);
+  const { width, height } = stickerFor(currentStickerSize(), stickerState.shape, stickerState.border, stickerState.borderColor);
+  const packed = packFrames(expandCopies(stickerState.images, width, height), sheet);
   const count = packed ? packed.sheets.length : 0;
   const label = FRAME_SHEETS[sheet].label;
   return count === 1 ? `Se va a generar 1 hoja ${label}` : `Se van a generar ${count} hojas ${label}`;
@@ -211,23 +213,24 @@ function renderCards(container, emptyHint, callbacks) {
  * de resolución, una vez por frame; "Copias" actualiza el contador y el texto de hojas sin
  * rearmar; "Quitar" rearma toda la vista previa.
  * @param {object} image StickerImage
- * @param {{size: number, shape: string, border: number, borderColor: string}} sticker mm
+ * @param {{width: number, height: number, shape: string, border: number, borderColor: string}} sticker mm
  * @param {{onRemove: () => void, onCopies: () => void}} callbacks
  */
 function createStickerCard(image, sticker, { onRemove, onCopies }) {
   const area = stickerPhotoArea(sticker);
-  const photo = { width: area.side, height: area.side };
+  const photo = { width: area.width, height: area.height };
 
   const figure = document.createElement('figure');
   figure.className = 'frame-card sticker-card';
 
   const canvas = document.createElement('canvas');
-  canvas.width = PREVIEW_SIDE;
-  canvas.height = PREVIEW_SIDE;
+  const scale = PREVIEW_SIDE / Math.max(sticker.width, sticker.height);
+  canvas.width = Math.round(sticker.width * scale);
+  canvas.height = Math.round(sticker.height * scale);
   canvas.setAttribute('aria-label', `Sticker de ${image.name}. Arrastrá la foto para reencuadrarla.`);
 
   const caption = document.createElement('figcaption');
-  caption.textContent = stickerText(sticker.shape, sticker.size);
+  caption.textContent = stickerText(sticker.shape, currentStickerSize());
 
   const warning = document.createElement('p');
   warning.className = 'frame-card-warning';
@@ -240,11 +243,11 @@ function createStickerCard(image, sticker, { onRemove, onCopies }) {
   }
   function draw() {
     renderSticker(image, sticker, canvas, { cutLine: true });
-    const dpi = cropDpi(image.width, image.height, area.side, area.side, image.crop);
+    const dpi = cropDpi(image.width, image.height, area.width, area.height, image.crop);
     warning.hidden = !isLowResolution(dpi);
   }
 
-  const outer = { width: sticker.size, height: sticker.size };
+  const outer = { width: sticker.width, height: sticker.height };
   attachCropDrag(canvas, { image, area: photo, outer, setCrop: setStickerCrop, onChange: scheduleDraw });
   const zoom = createZoomControl({ image, area: photo, setCrop: setStickerCrop, onChange: scheduleDraw });
 

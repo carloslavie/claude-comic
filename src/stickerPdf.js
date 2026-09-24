@@ -15,22 +15,23 @@ const CUT_LINE_COLOR = '#999999';
  * exportDpi, con fondo blanco fuera de la forma, y la misma imagen se reusa en todas sus copias.
  * @param {Array<object>} images StickerImage[], en orden
  * @param {{size: number, shape: string, border: string, borderColor: string, sheet: string}} options
- *   tamaño en mm, clave de STICKER_SHAPES, clave de STICKER_BORDERS, color '#rrggbb' y clave de FRAME_SHEETS
+ *   tamaño en mm (lado del cuadrado o lado largo del rectángulo), clave de STICKER_SHAPES, clave de STICKER_BORDERS, color '#rrggbb' y clave de FRAME_SHEETS
  */
 export async function exportStickersPdf(images, { size, shape, border, borderColor, sheet }) {
   const sheetId = Object.hasOwn(FRAME_SHEETS, sheet) ? sheet : DEFAULT_FRAME_SHEET;
   const sticker = stickerFor(size, shape, border, borderColor);
   const imagesById = new Map(images.map((image) => [image.id, image]));
 
-  const packed = packFrames(expandCopies(images, size), sheetId);
+  const { width, height } = sticker;
+  const packed = packFrames(expandCopies(images, width, height), sheetId);
   if (!packed) throw new Error('Un sticker no entra en la hoja elegida.');
 
   const doc = new jsPDF({ unit: 'mm', format: sheetId, orientation: packed.orientation });
   const canvas = document.createElement('canvas');
-  const px = Math.round((size / MM_PER_INCH) * exportDpi(size, size));
-  canvas.width = px;
-  canvas.height = px;
-  const radius = shapeRadius(sticker.shape, size);
+  const dpi = exportDpi(width, height);
+  canvas.width = Math.round((width / MM_PER_INCH) * dpi);
+  canvas.height = Math.round((height / MM_PER_INCH) * dpi);
+  const radius = shapeRadius(sticker.shape, width, height);
 
   // JPEG de cada foto, ya dibujado. Con el alias, jsPDF guarda la imagen una sola vez.
   const jpegs = new Map();
@@ -44,13 +45,13 @@ export async function exportStickersPdf(images, { size, shape, border, borderCol
         // Cede el hilo entre fotos para que la pestaña siga respondiendo.
         await new Promise((resolve) => setTimeout(resolve, 0));
       }
-      doc.addImage(jpegs.get(id), 'JPEG', x, y, size, size, id);
+      doc.addImage(jpegs.get(id), 'JPEG', x, y, width, height, id);
 
       doc.setDrawColor(CUT_LINE_COLOR);
       doc.setLineWidth(CUT_LINE_WIDTH_MM);
-      if (sticker.shape === 'circle') doc.circle(x + size / 2, y + size / 2, size / 2, 'S');
-      else if (radius > 0) doc.roundedRect(x, y, size, size, radius, radius, 'S');
-      else doc.rect(x, y, size, size, 'S');
+      if (sticker.shape === 'circle') doc.circle(x + width / 2, y + height / 2, width / 2, 'S');
+      else if (radius > 0) doc.roundedRect(x, y, width, height, radius, radius, 'S');
+      else doc.rect(x, y, width, height, 'S');
     }
   }
 

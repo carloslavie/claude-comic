@@ -1,14 +1,20 @@
 // Formas, tamaños, bordes y copias de los stickers. Lógica pura, todas las medidas en mm.
-// Los stickers son siempre cuadrados (el círculo se inscribe en el cuadrado): no tienen orientación.
+// Cada forma dice su formato (cuadrado, horizontal o vertical) y sus esquinas. El círculo se
+// inscribe en el cuadrado.
 
 // El orden de inserción es el orden del desplegable.
 export const STICKER_SHAPES = {
-  circle: { id: 'circle', label: 'Círculo' },
-  square: { id: 'square', label: 'Cuadrado' },
-  rounded: { id: 'rounded', label: 'Cuadrado redondeado' },
+  circle: { id: 'circle', label: 'Círculo', format: 'square', corners: 'circle' },
+  square: { id: 'square', label: 'Cuadrado', format: 'square', corners: 'straight' },
+  rounded: { id: 'rounded', label: 'Cuadrado redondeado', format: 'square', corners: 'rounded' },
+  landscape: { id: 'landscape', label: 'Rectángulo horizontal', format: 'landscape', corners: 'straight' },
+  'landscape-rounded': { id: 'landscape-rounded', label: 'Rectángulo horizontal redondeado', format: 'landscape', corners: 'rounded' },
+  portrait: { id: 'portrait', label: 'Rectángulo vertical', format: 'portrait', corners: 'straight' },
+  'portrait-rounded': { id: 'portrait-rounded', label: 'Rectángulo vertical redondeado', format: 'portrait', corners: 'rounded' },
 };
 export const DEFAULT_STICKER_SHAPE = 'circle';
-export const ROUNDED_RADIUS = 0.15; // fracción del lado
+export const ROUNDED_RADIUS = 0.15; // fracción del lado corto
+export const RECT_RATIO = 2 / 3; // lado corto / lado largo de los rectángulos
 
 // El orden de inserción es el orden del desplegable. Claves no numéricas para
 // que JavaScript no las reordene.
@@ -68,67 +74,99 @@ export function normalizeCopies(value) {
   return Math.min(COPIES_LIMITS.max, Math.max(COPIES_LIMITS.min, Math.round(value)));
 }
 
+// Forma del catálogo; una clave desconocida usa la forma por defecto.
+function shapeOf(shapeId) {
+  return Object.hasOwn(STICKER_SHAPES, shapeId) ? STICKER_SHAPES[shapeId] : STICKER_SHAPES[DEFAULT_STICKER_SHAPE];
+}
+
 /**
- * Radio de las esquinas de una forma de lado `side`. Una clave desconocida usa la forma por defecto.
+ * Medidas del sticker. `size` es el lado del cuadrado o el lado largo del rectángulo; el lado
+ * corto del rectángulo se redondea a 1 mm.
  * @param {string} shapeId clave de STICKER_SHAPES
- * @param {number} side mm
+ * @param {number} size mm
+ * @returns {{width: number, height: number}} mm
+ */
+export function stickerDimensions(shapeId, size) {
+  const { format } = shapeOf(shapeId);
+  const short = Math.round(size * RECT_RATIO);
+  if (format === 'landscape') return { width: size, height: short };
+  if (format === 'portrait') return { width: short, height: size };
+  return { width: size, height: size };
+}
+
+/**
+ * Radio de las esquinas de una forma de `width` × `height`.
+ * @param {string} shapeId clave de STICKER_SHAPES
+ * @param {number} width mm
+ * @param {number} height mm
  * @returns {number} mm
  */
-export function shapeRadius(shapeId, side) {
-  const shape = Object.hasOwn(STICKER_SHAPES, shapeId) ? shapeId : DEFAULT_STICKER_SHAPE;
-  if (shape === 'circle') return side / 2;
-  if (shape === 'rounded') return side * ROUNDED_RADIUS;
+export function shapeRadius(shapeId, width, height) {
+  const { corners } = shapeOf(shapeId);
+  const short = Math.min(width, height);
+  if (corners === 'circle') return short / 2;
+  if (corners === 'rounded') return short * ROUNDED_RADIUS;
   return 0;
 }
 
 /**
- * Sticker con la forma validada y el borde en mm.
- * @param {number} size mm
+ * Sticker con la forma validada, sus medidas y el borde en mm.
+ * @param {number} size mm, lado del cuadrado o lado largo del rectángulo
  * @param {string} shapeId clave de STICKER_SHAPES
  * @param {string} borderId clave de STICKER_BORDERS
  * @param {string} borderColor '#rrggbb'
- * @returns {{size: number, shape: string, border: number, borderColor: string}}
+ * @returns {{width: number, height: number, shape: string, border: number, borderColor: string}}
  */
 export function stickerFor(size, shapeId, borderId, borderColor) {
-  const shape = Object.hasOwn(STICKER_SHAPES, shapeId) ? shapeId : DEFAULT_STICKER_SHAPE;
+  const shape = shapeOf(shapeId).id;
+  const { width, height } = stickerDimensions(shape, size);
   const border = Object.hasOwn(STICKER_BORDERS, borderId) ? STICKER_BORDERS[borderId].width : 0;
-  return { size, shape, border, borderColor };
+  return { width, height, shape, border, borderColor };
 }
 
 /**
  * Área de la foto dentro del borde. El radio es el exterior menos el borde, así el borde
  * queda de grosor parejo también en las esquinas.
- * @param {{size: number, shape: string, border: number}} sticker
- * @returns {{x: number, y: number, side: number, radius: number}} mm
+ * @param {{width: number, height: number, shape: string, border: number}} sticker
+ * @returns {{x: number, y: number, width: number, height: number, radius: number}} mm
  */
-export function stickerPhotoArea({ size, shape, border }) {
+export function stickerPhotoArea({ width, height, shape, border }) {
   return {
     x: border,
     y: border,
-    side: size - 2 * border,
-    radius: Math.max(0, shapeRadius(shape, size) - border),
+    width: width - 2 * border,
+    height: height - 2 * border,
+    radius: Math.max(0, shapeRadius(shape, width, height) - border),
   };
 }
 
 /**
  * Lista para packFrames: cada foto repetida `copies` veces, en orden.
  * @param {{id: string, copies: number}[]} images
- * @param {number} size mm
+ * @param {number} width mm
+ * @param {number} height mm
  * @returns {{id: string, width: number, height: number}[]}
  */
-export function expandCopies(images, size) {
-  return images.flatMap((image) => Array.from({ length: image.copies }, () => ({ id: image.id, width: size, height: size })));
+export function expandCopies(images, width, height) {
+  return images.flatMap((image) => Array.from({ length: image.copies }, () => ({ id: image.id, width, height })));
 }
 
 /**
- * Texto del sticker: "Círculo de 5 cm", "Cuadrado redondeado de 4,5 cm".
+ * Texto del sticker: "Círculo de 5 cm", "Cuadrado redondeado de 4,5 cm",
+ * "Rectángulo horizontal de 5 × 3,3 cm".
  * @param {string} shapeId clave de STICKER_SHAPES
  * @param {number} size mm
  */
 export function stickerText(shapeId, size) {
-  const shape = Object.hasOwn(STICKER_SHAPES, shapeId) ? STICKER_SHAPES[shapeId] : STICKER_SHAPES[DEFAULT_STICKER_SHAPE];
-  const cm = String(size / 10).replace('.', ',');
-  return `${shape.label} de ${cm} cm`;
+  const shape = shapeOf(shapeId);
+  if (shape.format === 'square') return `${shape.label} de ${cm(size)} cm`;
+  const { width, height } = stickerDimensions(shape.id, size);
+  return `${shape.label} de ${cm(width)} × ${cm(height)} cm`;
+}
+
+// mm → cm con coma decimal, sin decimal si es entero.
+function cm(mm) {
+  return String(mm / 10).replace('.', ',');
 }
 
 /**
