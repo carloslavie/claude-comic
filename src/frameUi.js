@@ -12,11 +12,12 @@ import {
   setMatColor,
   setFrameSheet,
   currentFrameSize,
+  currentPdfSheet,
 } from './frameState.js';
 import { MAX_IMAGES } from './state.js';
-import { FRAME_SIZES, MATS, frameDimensions, photoArea } from './frameSizes.js';
+import { FRAME_SIZES, MATS, fullSheetFor, frameDimensions, photoArea } from './frameSizes.js';
 import { ZOOM_MIN, ZOOM_MAX, clampCrop, panCrop, cropDpi, isLowResolution } from './crop.js';
-import { FRAME_SHEETS, frameFits, packFrames } from './sheetLayout.js';
+import { FRAME_SHEETS, frameFits, packFrames, fullSheetPages } from './sheetLayout.js';
 import { frameFor, renderFrame } from './frameRender.js';
 import { exportFramesPdf } from './framePdf.js';
 import { createColorPicker } from './colorPicker.js';
@@ -38,6 +39,8 @@ export function initFramesUI() {
   const matColor = document.getElementById('frames-mat-color');
   const sheetSelect = document.getElementById('frames-sheet');
   const sheetHint = document.getElementById('frames-sheet-hint');
+  const fullSheetHint = document.getElementById('frames-full-sheet-hint');
+  const fullSheetText = document.getElementById('frames-full-sheet-text');
   const imageCount = document.getElementById('frames-image-count');
   const sheetCount = document.getElementById('frames-sheet-count');
   const pdfButton = document.getElementById('frames-pdf-button');
@@ -62,16 +65,20 @@ export function initFramesUI() {
   // Se llama después de cada cambio de estado.
   function refresh() {
     const size = currentFrameSize();
-    const fitsA4 = frameFits(size, 'a4');
+    const fullSheet = fullSheetFor(frameState.size);
+    const pdfSheet = currentPdfSheet();
+    const fitsA4 = fullSheet !== null || frameFits(size, 'a4');
     sheetSelect.querySelector('option[value="a4"]').disabled = !fitsA4;
-    sheetSelect.value = frameState.sheet;
+    sheetSelect.value = pdfSheet;
     sheetHint.hidden = fitsA4;
+    fullSheetHint.hidden = fullSheet === null;
+    fullSheetText.textContent = `Cada cuadro ocupa una hoja ${FRAME_SHEETS[pdfSheet].label} entera.`;
     matColor.disabled = frameState.mat === 'none';
 
     imageCount.textContent = `${frameState.images.length} / ${MAX_IMAGES} fotos`;
     sheetCount.textContent = sheetCountText(size);
     pdfButton.disabled = exporting || frameState.images.length === 0;
-    sheetSelect.disabled = pdfButton.disabled;
+    sheetSelect.disabled = pdfButton.disabled || fullSheet !== null;
     schedulePreview();
   }
 
@@ -85,7 +92,8 @@ export function initFramesUI() {
         size: currentFrameSize(),
         mat: frameState.mat,
         matColor: frameState.matColor,
-        sheet: frameState.sheet,
+        sheet: currentPdfSheet(),
+        fullSheet: fullSheetFor(frameState.size) !== null,
       });
     } catch (error) {
       console.error(error);
@@ -164,15 +172,22 @@ export function initFramesUI() {
 }
 
 /**
- * "Se van a generar N hojas A4", o vacío sin fotos.
+ * "Se van a generar N hojas A4", o vacío sin fotos. Con una medida de hoja completa,
+ * una hoja por foto.
  * @param {{short: number, long: number}} size mm
  */
 function sheetCountText(size) {
   if (frameState.images.length === 0) return '';
+  const sheet = currentPdfSheet();
   const frames = frameState.images.map((img) => ({ id: img.id, ...frameDimensions(size, img.orientation) }));
-  const packed = packFrames(frames, frameState.sheet);
-  const count = packed ? packed.sheets.length : 0;
-  const label = FRAME_SHEETS[frameState.sheet].label;
+  let count;
+  if (fullSheetFor(frameState.size)) {
+    count = fullSheetPages(frames).length;
+  } else {
+    const packed = packFrames(frames, sheet);
+    count = packed ? packed.sheets.length : 0;
+  }
+  const label = FRAME_SHEETS[sheet].label;
   return count === 1 ? `Se va a generar 1 hoja ${label}` : `Se van a generar ${count} hojas ${label}`;
 }
 

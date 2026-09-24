@@ -6,8 +6,10 @@ import {
   DEFAULT_MAT,
   frameOrientation,
   resolveFrameSize,
+  fullSheetFor,
   frameDimensions,
   normalizeCustomSize,
+  clampCustomSize,
   effectiveMat,
   photoArea,
 } from '../src/frameSizes.js';
@@ -30,6 +32,7 @@ describe('resolveFrameSize', () => {
   it('devuelve los lados de una medida del catálogo', () => {
     expect(resolveFrameSize('10x15', { short: 50, long: 50 })).toEqual({ short: 100, long: 150 });
     expect(resolveFrameSize('a4', { short: 50, long: 50 })).toEqual({ short: 210, long: 297 });
+    expect(resolveFrameSize('a3', { short: 50, long: 50 })).toEqual({ short: 297, long: 420 });
   });
 
   it('usa la medida personalizada con custom', () => {
@@ -104,6 +107,29 @@ describe('photoArea', () => {
 
   it('ocupa todo el cuadro sin paspartú', () => {
     expect(photoArea(130, 180, 0)).toEqual({ x: 0, y: 0, width: 130, height: 180 });
+  });
+});
+
+describe('clampCustomSize', () => {
+  it('recorta la medida A3 a los límites de la personalizada', () => {
+    expect(clampCustomSize({ short: 297, long: 420 })).toEqual({ short: 270, long: 400 });
+  });
+
+  it('deja igual una medida dentro de los límites', () => {
+    expect(clampCustomSize({ short: 130, long: 180 })).toEqual({ short: 130, long: 180 });
+  });
+});
+
+describe('fullSheetFor', () => {
+  it('devuelve la hoja que ocupa una medida de hoja completa', () => {
+    expect(fullSheetFor('a4')).toBe('a4');
+    expect(fullSheetFor('a3')).toBe('a3');
+  });
+
+  it('devuelve null con las demás medidas, la personalizada y una clave desconocida', () => {
+    expect(fullSheetFor('13x18')).toBeNull();
+    expect(fullSheetFor('custom')).toBeNull();
+    expect(fullSheetFor('xyz')).toBeNull();
   });
 });
 

@@ -10,6 +10,8 @@ import {
   frameOrientation,
   resolveFrameSize,
   normalizeCustomSize,
+  clampCustomSize,
+  fullSheetFor,
 } from './frameSizes.js';
 import { DEFAULT_CROP } from './crop.js';
 import { FRAME_SHEETS, DEFAULT_FRAME_SHEET, frameFits } from './sheetLayout.js';
@@ -88,13 +90,13 @@ export function removeFrameImage(id) {
 
 /**
  * Cambia la medida de todos los cuadros. Al elegir 'custom', la medida personalizada
- * toma la que estaba elegida. Una clave desconocida se ignora.
+ * toma la que estaba elegida, recortada a sus límites. Una clave desconocida se ignora.
  * @param {string} sizeId clave de FRAME_SIZES
  */
 export function setFrameSize(sizeId) {
   if (!Object.hasOwn(FRAME_SIZES, sizeId)) return;
   if (sizeId === 'custom' && frameState.size !== 'custom') {
-    frameState.customSize = resolveFrameSize(frameState.size, frameState.customSize);
+    frameState.customSize = clampCustomSize(resolveFrameSize(frameState.size, frameState.customSize));
   }
   frameState.size = sizeId;
   ensureSheetFits();
@@ -130,11 +132,13 @@ export function setMatColor(color) {
 }
 
 /**
- * Cambia la hoja del PDF. Ignora claves desconocidas y A4 si la medida vigente no entra.
+ * Cambia la hoja del PDF. Ignora claves desconocidas, A4 si la medida vigente no entra
+ * y cualquier hoja si la medida vigente es de hoja completa.
  * @param {string} sheetId clave de FRAME_SHEETS
  */
 export function setFrameSheet(sheetId) {
   if (!Object.hasOwn(FRAME_SHEETS, sheetId)) return;
+  if (fullSheetFor(frameState.size)) return;
   if (!frameFits(currentFrameSize(), sheetId)) return;
   frameState.sheet = sheetId;
 }
@@ -177,8 +181,18 @@ export function currentFrameSize() {
   return resolveFrameSize(frameState.size, frameState.customSize);
 }
 
-// Si la medida vigente no entra en la hoja elegida, pasa a A3.
+/**
+ * Hoja del PDF: la que ocupa la medida si es de hoja completa, o la elegida a mano.
+ * @returns {string} clave de FRAME_SHEETS
+ */
+export function currentPdfSheet() {
+  return fullSheetFor(frameState.size) ?? frameState.sheet;
+}
+
+// Si la medida vigente no entra en la hoja elegida, pasa a A3. Con una medida de hoja
+// completa no hace nada: la hoja elegida a mano se conserva.
 function ensureSheetFits() {
+  if (fullSheetFor(frameState.size)) return;
   if (!frameFits(currentFrameSize(), frameState.sheet)) frameState.sheet = 'a3';
 }
 

@@ -2,6 +2,7 @@
 import { getOrientation } from './orientation.js';
 
 // Cada medida guarda su lado corto y su lado largo; la orientación decide cuál es el ancho.
+// `fullSheet` es la hoja (clave de FRAME_SHEETS) que la medida ocupa entera, sin margen.
 // El orden de inserción es el orden del desplegable.
 export const FRAME_SIZES = {
   '10x15': { id: '10x15', label: '10 × 15 cm', short: 100, long: 150 },
@@ -9,7 +10,8 @@ export const FRAME_SIZES = {
   '15x20': { id: '15x20', label: '15 × 20 cm', short: 150, long: 200 },
   '20x25': { id: '20x25', label: '20 × 25 cm', short: 200, long: 250 },
   '20x30': { id: '20x30', label: '20 × 30 cm', short: 200, long: 300 },
-  a4: { id: 'a4', label: 'A4 (21 × 29,7 cm)', short: 210, long: 297 },
+  a4: { id: 'a4', label: 'A4 (21 × 29,7 cm)', short: 210, long: 297, fullSheet: 'a4' },
+  a3: { id: 'a3', label: 'A3 (29,7 × 42 cm)', short: 297, long: 420, fullSheet: 'a3' },
   custom: { id: 'custom', label: 'Personalizada' }, // usa frameState.customSize
 };
 export const DEFAULT_FRAME_SIZE = '13x18';
@@ -51,6 +53,17 @@ export function resolveFrameSize(sizeId, customSize) {
 }
 
 /**
+ * Hoja que la medida ocupa entera, o null si se acomoda en hojas con margen.
+ * La medida personalizada y una clave desconocida dan null.
+ * @param {string} sizeId clave de FRAME_SIZES
+ * @returns {string | null} clave de FRAME_SHEETS
+ */
+export function fullSheetFor(sizeId) {
+  if (!Object.hasOwn(FRAME_SIZES, sizeId)) return null;
+  return FRAME_SIZES[sizeId].fullSheet ?? null;
+}
+
+/**
  * Ancho y alto del cuadro según su orientación.
  * @param {{short: number, long: number}} size mm
  * @param {'portrait' | 'landscape'} orientation
@@ -75,6 +88,17 @@ export function normalizeCustomSize(aMm, bMm) {
   const short = Math.min(a, b);
   if (short > maxShort) return null;
   return { short, long: Math.max(a, b) };
+}
+
+/**
+ * Recorta una medida a los límites de la medida personalizada.
+ * @param {{short: number, long: number}} size mm
+ * @returns {{short: number, long: number}}
+ */
+export function clampCustomSize({ short, long }) {
+  const { min, max, maxShort } = CUSTOM_SIZE_LIMITS;
+  const clamp = (value, lo, hi) => Math.min(Math.max(value, lo), hi);
+  return { short: clamp(short, min, maxShort), long: clamp(long, min, max) };
 }
 
 /**

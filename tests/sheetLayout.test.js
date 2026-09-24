@@ -3,8 +3,12 @@ import { FRAME_SIZES } from '../src/frameSizes.js';
 import {
   FRAME_SHEETS,
   DEFAULT_FRAME_SHEET,
+  EXPORT_DPI,
+  MAX_CANVAS_PIXELS,
   frameFits,
   packFrames,
+  fullSheetPages,
+  exportDpi,
   cutMarks,
   framesFileName,
 } from '../src/sheetLayout.js';
@@ -24,8 +28,12 @@ describe('frameFits', () => {
     for (const id of ['20x25', '20x30', 'a4']) expect(frameFits(FRAME_SIZES[id], 'a4')).toBe(false);
   });
 
-  it('en A3 entra todo el catálogo', () => {
-    for (const size of catalog) expect(frameFits(size, 'a3')).toBe(true);
+  it('en A3 entra todo el catálogo salvo las medidas de hoja completa', () => {
+    for (const size of catalog.filter((size) => !size.fullSheet)) expect(frameFits(size, 'a3')).toBe(true);
+  });
+
+  it('la medida A3 no entra en el área útil de una A3', () => {
+    expect(frameFits(FRAME_SIZES.a3, 'a3')).toBe(false);
   });
 
   it('en A3 entra la medida personalizada más grande', () => {
@@ -157,5 +165,41 @@ describe('FRAME_SHEETS', () => {
   it('la hoja por defecto existe y las claves coinciden con su id', () => {
     expect(Object.hasOwn(FRAME_SHEETS, DEFAULT_FRAME_SHEET)).toBe(true);
     for (const [key, sheet] of Object.entries(FRAME_SHEETS)) expect(sheet.id).toBe(key);
+  });
+});
+
+describe('fullSheetPages', () => {
+  it('una hoja por cuadro, con la orientación del cuadro', () => {
+    expect(
+      fullSheetPages([
+        { id: 'a', width: 297, height: 420 },
+        { id: 'b', width: 420, height: 297 },
+      ]),
+    ).toEqual([
+      { id: 'a', orientation: 'portrait' },
+      { id: 'b', orientation: 'landscape' },
+    ]);
+  });
+
+  it('sin cuadros no hay hojas', () => {
+    expect(fullSheetPages([])).toEqual([]);
+  });
+});
+
+describe('exportDpi', () => {
+  const pixels = (w, h, dpi) => Math.round((w / 25.4) * dpi) * Math.round((h / 25.4) * dpi);
+
+  it('usa 300 DPI si el canvas entra en el límite', () => {
+    expect(EXPORT_DPI).toBe(300);
+    expect(exportDpi(130, 180)).toBe(300);
+    expect(exportDpi(210, 297)).toBe(300);
+    expect(exportDpi(270, 400)).toBe(300);
+  });
+
+  it('baja lo justo para que un A3 no pase el límite, en las dos orientaciones', () => {
+    expect(exportDpi(297, 420)).toBe(287);
+    expect(exportDpi(420, 297)).toBe(287);
+    expect(pixels(297, 420, 287)).toBeLessThanOrEqual(MAX_CANVAS_PIXELS);
+    expect(pixels(297, 420, 288)).toBeGreaterThan(MAX_CANVAS_PIXELS);
   });
 });

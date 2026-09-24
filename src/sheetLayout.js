@@ -9,6 +9,10 @@ export const DEFAULT_FRAME_SHEET = 'a4';
 export const SHEET_MARGIN_MM = 10;
 export const FRAME_GAP_MM = 5;
 export const CUT_MARK = { offset: 1, length: 1.2 }; // mm desde la esquina del cuadro
+export const EXPORT_DPI = 300;
+export const MAX_CANVAS_PIXELS = 16_000_000; // Safari de iOS no dibuja canvas de más de 16,7 Mpx
+
+const MM_PER_INCH = 25.4;
 
 /**
  * Área útil de la hoja en vertical (sin márgenes). Una clave desconocida se trata como A4.
@@ -89,6 +93,31 @@ function packInArea(frames, areaW, areaH) {
 
   if (current.length) sheets.push(current);
   return sheets;
+}
+
+/**
+ * Una hoja por cuadro, en orden, para las medidas de hoja completa. Cada hoja toma la
+ * orientación de su cuadro.
+ * @param {Array<{id: string, width: number, height: number}>} frames mm
+ * @returns {Array<{id: string, orientation: 'portrait' | 'landscape'}>}
+ */
+export function fullSheetPages(frames) {
+  return frames.map(({ id, width, height }) => ({ id, orientation: width > height ? 'landscape' : 'portrait' }));
+}
+
+/**
+ * Resolución de exportación de un cuadro: EXPORT_DPI, o la mayor entera que no deja
+ * pasar el canvas de MAX_CANVAS_PIXELS.
+ * @param {number} widthMm
+ * @param {number} heightMm
+ * @returns {number}
+ */
+export function exportDpi(widthMm, heightMm) {
+  const pixels = (dpi) =>
+    Math.round((widthMm / MM_PER_INCH) * dpi) * Math.round((heightMm / MM_PER_INCH) * dpi);
+  let dpi = EXPORT_DPI;
+  while (dpi > 1 && pixels(dpi) > MAX_CANVAS_PIXELS) dpi--;
+  return dpi;
 }
 
 /**
