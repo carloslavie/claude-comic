@@ -3,68 +3,76 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Web Comic</title>
+    <title>PictureFactory</title>
   </head>
   <body>
     <header class="app-header">
-      <h1>Web Comic</h1>
+      <h1><a class="app-name" href="#/">PictureFactory</a></h1>
+      <a id="home-link" class="home-link" href="#/" hidden>← Inicio</a>
     </header>
-    <main id="app">
-      <section class="panel" aria-labelledby="upload-heading">
-        <h2 id="upload-heading">Imágenes</h2>
-
-        <div id="drop-zone" class="drop-zone">
-          <p>Arrastrá tus imágenes acá</p>
-          <p class="drop-zone-or">o</p>
-          <label class="button">
-            Elegir archivos
-            <input
-              id="file-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              hidden
-            />
-          </label>
-          <p class="hint">JPG, PNG o WebP · máximo 40 imágenes</p>
-        </div>
-
-        <div id="messages" class="messages" role="status" aria-live="polite"></div>
-
-        <label class="field">
-          <span>Título del comic</span>
-          <input id="title-input" type="text" placeholder="Sin título = sin portada" />
-        </label>
-
-        <fieldset id="title-style" class="title-style" disabled>
-          <legend>Estilo del título</legend>
-          <div id="title-style-controls" class="title-style-controls"></div>
-          <button id="title-style-reset" class="title-style-reset" type="button">Restablecer estilo</button>
-        </fieldset>
-
-        <div class="field">
-          <span>Color de fondo</span>
-          <div id="page-color"></div>
-        </div>
-
-        <p id="image-count" class="image-count"></p>
-        <ol id="thumb-list" class="thumb-list"></ol>
+    <main>
+      <section class="home" data-view="home" aria-labelledby="home-heading">
+        <h2 id="home-heading">¿Qué querés crear hoy?</h2>
+        <ul id="tool-list" class="tool-list"></ul>
       </section>
 
-      <section class="panel preview-panel" aria-labelledby="preview-heading">
-        <div class="preview-header">
-          <h2 id="preview-heading">Vista previa</h2>
-          <div class="pdf-actions">
-            <label class="pdf-format">
-              <span>Formato</span>
-              <select id="pdf-format" disabled></select>
+      <div id="comic-view" data-view="comic" hidden>
+        <section class="panel" aria-labelledby="upload-heading">
+          <h2 id="upload-heading">Imágenes</h2>
+
+          <div id="drop-zone" class="drop-zone">
+            <p>Arrastrá tus imágenes acá</p>
+            <p class="drop-zone-or">o</p>
+            <label class="button">
+              Elegir archivos
+              <input
+                id="file-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                hidden
+              />
             </label>
-            <button id="pdf-button" class="button" type="button" disabled>Descargar PDF</button>
+            <p class="hint">JPG, PNG o WebP · máximo 40 imágenes</p>
           </div>
-        </div>
-        <p id="preview-empty" class="hint">Cargá imágenes para ver las páginas.</p>
-        <div id="preview" class="preview"></div>
-      </section>
+
+          <div id="messages" class="messages" role="status" aria-live="polite"></div>
+
+          <label class="field">
+            <span>Título del comic</span>
+            <input id="title-input" type="text" placeholder="Sin título = sin portada" />
+          </label>
+
+          <fieldset id="title-style" class="title-style" disabled>
+            <legend>Estilo del título</legend>
+            <div id="title-style-controls" class="title-style-controls"></div>
+            <button id="title-style-reset" class="title-style-reset" type="button">Restablecer estilo</button>
+          </fieldset>
+
+          <div class="field">
+            <span>Color de fondo</span>
+            <div id="page-color"></div>
+          </div>
+
+          <p id="image-count" class="image-count"></p>
+          <ol id="thumb-list" class="thumb-list"></ol>
+        </section>
+
+        <section class="panel preview-panel" aria-labelledby="preview-heading">
+          <div class="preview-header">
+            <h2 id="preview-heading">Vista previa</h2>
+            <div class="pdf-actions">
+              <label class="pdf-format">
+                <span>Formato</span>
+                <select id="pdf-format" disabled></select>
+              </label>
+              <button id="pdf-button" class="button" type="button" disabled>Descargar PDF</button>
+            </div>
+          </div>
+          <p id="preview-empty" class="hint">Cargá imágenes para ver las páginas.</p>
+          <div id="preview" class="preview"></div>
+        </section>
+      </div>
     </main>
     <script type="module" src="/src/main.js"></script>
   </body>

@@ -12,6 +12,9 @@ body {
 }
 
 .app-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
   padding: 16px 24px;
   background: #1a1a1a;
   color: #fff;
@@ -22,15 +25,143 @@ body {
   font-size: 1.5rem;
 }
 
-#app {
+.app-header a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-header a:hover {
+  color: #ffd23f;
+}
+
+.app-header a:focus-visible {
+  outline: 3px solid #ffd23f;
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+.home-link {
+  font-weight: 600;
+}
+
+/* Menú inicial */
+
+.home {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.home h2 {
+  margin: 0 0 24px;
+  font-size: 1.6rem;
+  text-align: center;
+}
+
+.tool-list {
+  display: grid;
+  gap: 20px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media (min-width: 800px) {
+  .tool-list {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.tool-list li {
+  display: flex;
+}
+
+.tool-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 24px;
+  border: 2px solid #1a1a1a;
+  border-radius: 8px;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+a.tool-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 #1a1a1a;
+}
+
+a.tool-card:focus-visible {
+  outline: 3px solid #1d70b8;
+  outline-offset: 3px;
+}
+
+.tool-card-icon {
+  display: inline-flex;
+  padding: 10px;
+  border: 2px solid #1a1a1a;
+  border-radius: 8px;
+  background: #ffd23f;
+}
+
+.tool-card-title {
+  margin: 4px 0 0;
+  font-size: 1.2rem;
+}
+
+.tool-card-description {
+  margin: 0;
+  color: #444;
+}
+
+.tool-card.is-soon {
+  border-style: dashed;
+  border-color: #999;
+  color: #777;
+  cursor: default;
+  user-select: none;
+}
+
+.tool-card.is-soon .tool-card-icon {
+  border-color: #999;
+  background: #eee;
+}
+
+.tool-card.is-soon .tool-card-description {
+  color: #888;
+}
+
+.tool-card-soon {
+  margin-top: auto;
+  padding: 2px 10px;
+  border: 1px solid #999;
+  border-radius: 999px;
+  background: #f4f1ea;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+#comic-view {
   display: grid;
   gap: 24px;
   align-items: start;
   padding: 24px;
 }
 
+/* `display: grid` le gana a `hidden`: sin esto la vista oculta se vería. */
+#comic-view[hidden] {
+  display: none;
+}
+
 @media (min-width: 1000px) {
-  #app {
+  #comic-view {
     grid-template-columns: minmax(360px, 440px) 1fr;
   }
 }
