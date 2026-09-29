@@ -18,7 +18,7 @@ import { MAX_IMAGES } from './state.js';
 import { FRAME_SIZES, MATS, fullSheetFor, frameDimensions, photoArea } from './frameSizes.js';
 import { cropDpi, isLowResolution } from './crop.js';
 import { attachCropDrag, createZoomControl, makeCardButton } from './cropControls.js';
-import { FRAME_SHEETS, frameFits, packFrames, fullSheetPages } from './sheetLayout.js';
+import { FRAME_SHEETS, frameFits, packFrames, fullSheetPages, sheetCapacity } from './sheetLayout.js';
 import { frameFor, renderFrame } from './frameRender.js';
 import { exportFramesPdf } from './framePdf.js';
 import { createColorPicker } from './colorPicker.js';
@@ -40,6 +40,7 @@ export function initFramesUI() {
   const matColor = document.getElementById('frames-mat-color');
   const sheetSelect = document.getElementById('frames-sheet');
   const sheetHint = document.getElementById('frames-sheet-hint');
+  const capacity = document.getElementById('frames-capacity');
   const fullSheetHint = document.getElementById('frames-full-sheet-hint');
   const fullSheetText = document.getElementById('frames-full-sheet-text');
   const imageCount = document.getElementById('frames-image-count');
@@ -72,6 +73,9 @@ export function initFramesUI() {
     sheetSelect.querySelector('option[value="a4"]').disabled = !fitsA4;
     sheetSelect.value = pdfSheet;
     sheetHint.hidden = fitsA4;
+    // Con hoja completa lo dice el aviso de abajo.
+    capacity.hidden = fullSheet !== null;
+    capacity.textContent = fullSheet === null ? capacityText(size, pdfSheet) : '';
     fullSheetHint.hidden = fullSheet === null;
     fullSheetText.textContent = `Cada cuadro ocupa una hoja ${FRAME_SHEETS[pdfSheet].label} entera.`;
     matColor.disabled = frameState.mat === 'none';
@@ -79,7 +83,7 @@ export function initFramesUI() {
     imageCount.textContent = `${frameState.images.length} / ${MAX_IMAGES} fotos`;
     sheetCount.textContent = sheetCountText(size);
     pdfButton.disabled = exporting || frameState.images.length === 0;
-    sheetSelect.disabled = pdfButton.disabled || fullSheet !== null;
+    sheetSelect.disabled = exporting || fullSheet !== null;
     schedulePreview();
   }
 
@@ -177,6 +181,16 @@ export function initFramesUI() {
  * una hoja por foto.
  * @param {{short: number, long: number}} size mm
  */
+/**
+ * "Entran 2 cuadros por hoja A4" (o "Entra 1 cuadro…") con la medida elegida. No depende de
+ * las fotos: la medida vertical en la mejor orientación de la hoja.
+ */
+function capacityText(size, sheet) {
+  const count = sheetCapacity(size.short, size.long, sheet);
+  const label = FRAME_SHEETS[sheet].label;
+  return count === 1 ? `Entra 1 cuadro por hoja ${label}` : `Entran ${count} cuadros por hoja ${label}`;
+}
+
 function sheetCountText(size) {
   if (frameState.images.length === 0) return '';
   const sheet = currentPdfSheet();

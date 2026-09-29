@@ -84,7 +84,7 @@ export function initStickersUI() {
     borderColor.disabled = stickerState.border === 'none';
     updateCounts();
     pdfButton.disabled = exporting || stickerState.images.length === 0;
-    sheetSelect.disabled = pdfButton.disabled;
+    sheetSelect.disabled = exporting;
     schedulePreview();
   }
 

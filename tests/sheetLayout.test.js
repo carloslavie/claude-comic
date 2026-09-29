@@ -234,4 +234,22 @@ describe('sheetCapacity', () => {
       }
     }
   });
+
+  it('cuenta los cuadros por hoja con la medida vertical', () => {
+    expect(sheetCapacity(100, 150, 'a4')).toBe(2);
+    expect(sheetCapacity(100, 150, 'a3')).toBe(4);
+    expect(sheetCapacity(130, 180, 'a4')).toBe(2);
+    expect(sheetCapacity(130, 180, 'a3')).toBe(4);
+    expect(sheetCapacity(150, 200, 'a4')).toBe(1);
+    expect(sheetCapacity(200, 300, 'a4')).toBe(0);
+    expect(sheetCapacity(200, 300, 'a3')).toBe(1);
+  });
+
+  it('coincide con packFrames para cuadros de 13 × 18', () => {
+    for (const sheet of ['a4', 'a3']) {
+      const capacity = sheetCapacity(130, 180, sheet);
+      expect(packFrames(frames(capacity, 130, 180), sheet).sheets).toHaveLength(1);
+      expect(packFrames(frames(capacity + 1, 130, 180), sheet).sheets).toHaveLength(2);
+    }
+  });
 });
