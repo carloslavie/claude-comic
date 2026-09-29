@@ -7,6 +7,7 @@ import {
   MAX_CANVAS_PIXELS,
   frameFits,
   packFrames,
+  sheetCapacity,
   fullSheetPages,
   exportDpi,
   cutMarks,
@@ -201,5 +202,36 @@ describe('exportDpi', () => {
     expect(exportDpi(420, 297)).toBe(287);
     expect(pixels(297, 420, 287)).toBeLessThanOrEqual(MAX_CANVAS_PIXELS);
     expect(pixels(297, 420, 288)).toBeGreaterThan(MAX_CANVAS_PIXELS);
+  });
+});
+
+describe('sheetCapacity', () => {
+  it('cuenta las piezas que entran en la mejor orientación de la hoja', () => {
+    expect(sheetCapacity(50, 50, 'a4')).toBe(15);
+    expect(sheetCapacity(30, 30, 'a4')).toBe(40);
+    expect(sheetCapacity(70, 70, 'a4')).toBe(6);
+    expect(sheetCapacity(100, 100, 'a4')).toBe(2);
+    expect(sheetCapacity(190, 190, 'a4')).toBe(1);
+    expect(sheetCapacity(50, 33, 'a4')).toBe(25);
+    expect(sheetCapacity(33, 50, 'a4')).toBe(25);
+    expect(sheetCapacity(50, 50, 'a3')).toBe(35);
+  });
+
+  it('trata una hoja desconocida como A4', () => {
+    expect(sheetCapacity(50, 50, 'xyz')).toBe(15);
+  });
+
+  it('devuelve 0 si la pieza no entra', () => {
+    expect(sheetCapacity(300, 300, 'a4')).toBe(0);
+  });
+
+  it('coincide con packFrames: esa cantidad entra en 1 hoja y una más pide 2', () => {
+    for (const sheet of ['a4', 'a3']) {
+      for (const [width, height] of [[50, 50], [50, 33], [33, 50]]) {
+        const capacity = sheetCapacity(width, height, sheet);
+        expect(packFrames(frames(capacity, width, height), sheet).sheets).toHaveLength(1);
+        expect(packFrames(frames(capacity + 1, width, height), sheet).sheets).toHaveLength(2);
+      }
+    }
   });
 });

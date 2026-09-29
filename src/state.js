@@ -6,7 +6,7 @@ import { DEFAULT_TITLE_STYLE } from './titleStyle.js';
 import { DEFAULT_PDF_FORMAT, PDF_FORMATS } from './pdfFormat.js';
 import { DEFAULT_CROP } from './crop.js';
 
-export const MAX_IMAGES = 40;
+export const MAX_IMAGES = 100;
 export const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export const state = {

@@ -56,6 +56,22 @@ export function packFrames(frames, sheetId) {
   return { orientation: 'landscape', sheets: landscape };
 }
 
+/**
+ * Cuántas piezas iguales entran en una hoja sin girarlas: la mayor cantidad entre la hoja
+ * vertical y la horizontal, con el mismo margen y separación que packFrames.
+ * @param {number} width mm
+ * @param {number} height mm
+ * @param {string} sheetId clave de FRAME_SHEETS
+ * @returns {number} 0 si la pieza no entra
+ */
+export function sheetCapacity(width, height, sheetId) {
+  const area = usableArea(sheetId);
+  const fit = (areaW, areaH) =>
+    Math.floor((areaW + FRAME_GAP_MM) / (width + FRAME_GAP_MM)) *
+    Math.floor((areaH + FRAME_GAP_MM) / (height + FRAME_GAP_MM));
+  return Math.max(fit(area.width, area.height), fit(area.height, area.width));
+}
+
 function packInArea(frames, areaW, areaH) {
   const sheets = [];
   let current = [];

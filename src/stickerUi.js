@@ -25,7 +25,7 @@ import {
   stickerPhotoArea,
 } from './stickerSizes.js';
 import { cropDpi, isLowResolution } from './crop.js';
-import { FRAME_SHEETS, packFrames } from './sheetLayout.js';
+import { FRAME_SHEETS, packFrames, sheetCapacity } from './sheetLayout.js';
 import { renderSticker } from './stickerRender.js';
 import { exportStickersPdf } from './stickerPdf.js';
 import { attachCropDrag, createZoomControl, makeCardButton } from './cropControls.js';
@@ -48,6 +48,7 @@ export function initStickersUI() {
   const borderSelect = document.getElementById('stickers-border');
   const borderColor = document.getElementById('stickers-border-color');
   const sheetSelect = document.getElementById('stickers-sheet');
+  const capacity = document.getElementById('stickers-capacity');
   const stickerCount = document.getElementById('stickers-count');
   const sheetCount = document.getElementById('stickers-sheet-count');
   const pdfButton = document.getElementById('stickers-pdf-button');
@@ -70,8 +71,10 @@ export function initStickersUI() {
     }),
   );
 
-  // Contador y texto de hojas. Lo usa "Copias", que no rearma las tarjetas.
+  // Contador, texto de hojas y stickers por hoja. Lo usan "Copias" y "Hoja", que no rearman
+  // las tarjetas.
   function updateCounts() {
+    capacity.textContent = capacityText();
     stickerCount.textContent = countText();
     sheetCount.textContent = sheetCountText();
   }
@@ -181,6 +184,18 @@ function countText() {
   const photos = stickerState.images.length;
   const stickers = stickerState.images.reduce((sum, img) => sum + img.copies, 0);
   return `${photos} ${photos === 1 ? 'foto' : 'fotos'} · ${stickers} ${stickers === 1 ? 'sticker' : 'stickers'}`;
+}
+
+/**
+ * "Entran 15 stickers por hoja A4" (o "Entra 1 sticker…") con la forma y el tamaño elegidos.
+ * No depende de las fotos.
+ */
+function capacityText() {
+  const sheet = stickerState.sheet;
+  const { width, height } = stickerFor(currentStickerSize(), stickerState.shape, stickerState.border, stickerState.borderColor);
+  const count = sheetCapacity(width, height, sheet);
+  const label = FRAME_SHEETS[sheet].label;
+  return count === 1 ? `Entra 1 sticker por hoja ${label}` : `Entran ${count} stickers por hoja ${label}`;
 }
 
 /**
